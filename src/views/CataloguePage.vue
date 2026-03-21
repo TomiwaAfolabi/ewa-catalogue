@@ -7,7 +7,7 @@ import MeasuringTapeIcon from "../../public/icons/measuring-tape.vue"
 import PaymentIcon from "../../public/icons/payment-icon.vue"
 
 interface CatalogueItem {
-  id: string | number;
+  id: string;
   title?: string;
   images?: string[];
   sizes?: {
@@ -56,7 +56,7 @@ function showSlides(n: number) {
 
 
 }
- function shareByWhatsApp(item:{}){
+ function shareByWhatsApp(item: string){
         location.href = `http://api.whatsapp.com/send?phone=23058533374&text=Good Day, I am interested in purchasing the ${item} listed on your website.`;
     }
 
