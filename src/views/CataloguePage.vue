@@ -6,12 +6,29 @@ import WhatsAppIcon from "../../public/icons/whatsapp-icon.vue"
 import MeasuringTapeIcon from "../../public/icons/measuring-tape.vue"
 import PaymentIcon from "../../public/icons/payment-icon.vue"
 
-const catalogueList= ref(catatlogueCardDetails) as any
+interface CatalogueItem {
+  id: string | number;
+  title?: string;
+  images?: string[];
+  sizes?: {
+    waist?: string;
+    length?: string;
+    shirtlength?: string;
+    thighWidth?: string;
+    shoulder?: string;
+    chest?: string;
+    armWidth?: string;
+    armLength?: string;
+  };
+  [key: string]: any;
+}
+
+const catalogueList= ref<CatalogueItem[]>(catatlogueCardDetails) 
 const route = useRoute()
 const itemId=computed(()=> route?.params?.id)
 const cardDetail= computed(()=>{
-    let card={} as any
-      catalogueList.value.forEach((el:any)=> {
+    let card: CatalogueItem = { id: '' }
+      catalogueList.value.forEach((el: CatalogueItem)=> {
         if(el?.id == itemId?.value?.toString()){
             card=el
         }
@@ -21,11 +38,11 @@ const cardDetail= computed(()=>{
 let slideIndex = 1;
 
 // Next/previous controls
-function plusSlides(n) {
+function plusSlides(n: number) {
   showSlides(slideIndex += n);
 }
 
-function showSlides(n) {
+function showSlides(n: number) {
   let i;
   let slides = document.getElementsByClassName("mySlides")
   if (n > slides.length) {slideIndex = 1}
@@ -39,7 +56,7 @@ function showSlides(n) {
 
 
 }
- function shareByWhatsApp(item:any){
+ function shareByWhatsApp(item:{}){
         location.href = `http://api.whatsapp.com/send?phone=23058533374&text=Good Day, I am interested in purchasing the ${item} listed on your website.`;
     }
 
