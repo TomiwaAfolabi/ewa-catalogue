@@ -23,7 +23,9 @@ function routeNav(val:any){
     }else{
         linkVal=val
     }
+   showNav.value=false 
 router.push({name:linkVal})
+
 }
 function toggleNav(){
     showNav.value=!showNav.value
