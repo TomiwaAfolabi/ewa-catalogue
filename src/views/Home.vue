@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted,onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router =useRouter()
 onMounted(()=>{
-router.push({name:'catalogue-home'})
+    const getUser =sessionStorage.getItem('reroute')
+  if(getUser=='true') return
+  router.push({name:'catalogue-home'}) 
+  sessionStorage.setItem('reroute','true')
 })
 </script>
 

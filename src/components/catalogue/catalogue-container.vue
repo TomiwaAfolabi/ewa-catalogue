@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import CatalogueContainerCard from "../catalogue/catalogue-card.vue" 
-import { ref, computed } from 'vue'
+import { ref, computed,onMounted } from 'vue'
 import {useRouter } from 'vue-router'
 import catatlogueCardDetails from "../../static/catalogue-details.json"
 
@@ -12,6 +12,9 @@ function routeCataloguePage(item:any){
 router.push({name:'catalogue-page',params:{id: item?.id}})
 }
 
+onMounted(()=>{
+  sessionStorage.setItem('reroute','true')
+})
 </script>
 
 <template>
