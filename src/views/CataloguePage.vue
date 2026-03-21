@@ -67,15 +67,15 @@ onMounted(()=>{
 </script>
 
 <template>
- <div class="w-full  h-screen relative pb-4 p-6 ">
- <div class=" cpageHeight   border-2 absolute ">   
+ <div class="w-full  h-screen relative pb-4  p-6  ">
+ <div class=" cpageHeight  absolute ">   
  </div>
- <div  class="flex flex-col w-full relative  cpContainer   gap-2  sm:mb-4 pl-0 sm:pl-40 "  >
-     <p class=" font-bold text-3xl mt-6 text-center sm:text-start">{{ cardDetail?.title}}</p>
-   <div class="flex flex-col sm:flex-row pr-0 sm:pr-40 mt-4 overflow-y-scroll overflow-x-hidden  slideContainer   ">
+ <div  class="flex flex-col w-full relative  cpContainer   gap-2  sm:mb-4  pl-0 sm:pl-40  "  >
+     <p class=" font-bold text-3xl mt-6 sm:mt-0 text-center sm:text-start">{{ cardDetail?.title}}</p>
+   <div class="flex flex-col sm:flex-row pr-0 sm:pr-40 mt-4 sm:mt-0 overflow-y-scroll overflow-x-hidden  slideContainer   ">
       <div class="slideshow-container  ">
         <div class=" mySlides fade" v-for="(images, i) in cardDetail?.images" >
-        <img :src="images" class="w-full sm:w-2/3  slideImage rounded-lg">
+        <img :src="images" class="w-full   sm:w-5/6  slideImage rounded-lg">
         </div>
         <!-- Next and previous buttons -->
         <a class="prev" @click="plusSlides(-1)">&#10094;</a>
@@ -149,12 +149,20 @@ onMounted(()=>{
 }
 .cpContainer{
     width:100%;
-    height:85%;
+    height:100%;
     color: #C4D8E2;
+     @media screen and (max-width: 667px)  { 
+       height:85%
+    }
+   
+
 }
 .slideContainer{
   width: 100%;
-  height:70%
+  height:85%;
+   @media screen and (max-width: 667px)  { 
+       height:70%
+    }
 }
 
 
@@ -163,13 +171,14 @@ onMounted(()=>{
   display: none;
 }
 .slideImage{
-    height: 100%;
+    height: 550px;
 }
 
 /* Slideshow container */
 .slideshow-container {
  width: 100%;
   position: relative;
+
 }
 
 
