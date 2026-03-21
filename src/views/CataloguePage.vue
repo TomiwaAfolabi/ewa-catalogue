@@ -67,12 +67,12 @@ onMounted(()=>{
 </script>
 
 <template>
- <div class="w-full  h-screen relative pb-4 pt-4 ">
- <div class=" cpageHeight w-full mt-4 border-2 absolute">   
+ <div class="w-full  h-screen relative pb-4 p-6 ">
+ <div class=" cpageHeight   border-2 absolute ">   
  </div>
- <div  class="flex flex-col w-full relative  cpContainer   gap-2 overflow-scroll  sm:mb-4 pl-2 sm:pl-40  "  >
-     <p class=" font-bold text-3xl mt-10 text-center sm:text-start">{{ cardDetail?.title}}</p>
-   <div class="flex flex-col sm:flex-row pr-2 sm:pr-40 mt-6 overflow-scroll h-100 sm:h-full">
+ <div  class="flex flex-col w-full relative  cpContainer   gap-2  sm:mb-4 pl-0 sm:pl-40 "  >
+     <p class=" font-bold text-3xl mt-6 text-center sm:text-start">{{ cardDetail?.title}}</p>
+   <div class="flex flex-col sm:flex-row pr-0 sm:pr-40 mt-4 overflow-y-scroll overflow-x-hidden  slideContainer   ">
       <div class="slideshow-container  ">
         <div class=" mySlides fade" v-for="(images, i) in cardDetail?.images" >
         <img :src="images" class="w-full sm:w-2/3  slideImage rounded-lg">
@@ -85,7 +85,7 @@ onMounted(()=>{
     <div class="w-full sm:w-6/7 flex flex-col gap-10">
     <div>
     <p class=" w-full sm:w-6/7 border-2 h-10  flex justify-center items-center sizeGuideText mt-6 sm:mt-0 gap-2 font-semibold"><MeasuringTapeIcon class="w-6 h-6"/> Size Guide</p>
-     <div class=" w-full sm:w-6/7 border sizeGuide  h-40 overflow-scroll ">
+     <div class=" w-full sm:w-6/7 border sizeGuide  h-40 overflow-y-scroll ">
      <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-2  h-auto justify-items-center sm:justify-items-start">
         <span v-if="cardDetail?.sizes?.waist" class="flex gap-2">
             <p>Waist:</p>
@@ -126,7 +126,7 @@ onMounted(()=>{
     </div>
      <div>
     <p class=" w-full sm:w-6/7 border-2 h-10  flex justify-center items-center sizeGuideText gap-2 font-semibold"> <PaymentIcon class="w-6 h-6"/> Payment</p>
-     <div class=" w-full sm:w-6/7 border sizeGuide  h-40 overflow-scroll ">
+     <div class=" w-full sm:w-6/7 border sizeGuide  h-40 overflow-y-scroll ">
      <div class="p-4 flex flex-col justify-center items-center  gap-4">  
         <p class="text-center">Kindly reach out to us by clicking on the whatsapp icon below</p>
         <WhatsAppIcon class="w-12 h-12 cursor-pointer hover:scale-120 ease-in-out transition-all duration-500" @click="shareByWhatsApp(cardDetail?.title)"/>
@@ -144,13 +144,17 @@ onMounted(()=>{
 
 .cpageHeight{
     height: 82%;
-
     border-color: #ffffe3;
      opacity:35%;
 }
 .cpContainer{
     width:100%;
+    height:85%;
     color: #C4D8E2;
+}
+.slideContainer{
+  width: 100%;
+  height:70%
 }
 
 
@@ -159,7 +163,7 @@ onMounted(()=>{
   display: none;
 }
 .slideImage{
-    height: 450px;
+    height: 100%;
 }
 
 /* Slideshow container */

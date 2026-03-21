@@ -13,8 +13,8 @@ onMounted(()=>{
 
 <template>
 <div class="w-full h-screen flex justify-center items-center">
-    <div class="relative h-full flex justify-center items-center">
-     <div class=" w-96 h-96 rounded-lg border-2 homepageHeight  ">
+    <div class="w-full relative h-full flex justify-center items-center p-4">
+     <div class=" w-full sm:w-96 rounded-lg border-2 homepageHeight  ">
     </div>
     <div class="absolute homepageText items-center">
     <div class="relative flex justify-center mb-4">
@@ -35,6 +35,9 @@ onMounted(()=>{
     border-color: #ffffe3;
      opacity:55%;
      
+      @media screen and (max-width: 667px)  { 
+       height: 70%;
+    }
 }
 .homepageText{
 color: #C4D8E2;

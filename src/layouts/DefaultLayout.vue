@@ -13,7 +13,5 @@
 .footer{
     background-color: #d5c58a;
     opacity: 80%;
-
- 
 }
 </style>
