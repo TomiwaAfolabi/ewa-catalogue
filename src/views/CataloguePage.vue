@@ -20,7 +20,6 @@ interface CatalogueItem {
     armWidth?: string;
     armLength?: string;
   };
-  [key: string]: any;
 }
 
 const catalogueList= ref<CatalogueItem[]>(catatlogueCardDetails) 
@@ -56,7 +55,8 @@ function showSlides(n: number) {
 
 
 }
- function shareByWhatsApp(item: string){
+ function shareByWhatsApp(item: string | undefined){
+        if (!item) return;
         location.href = `http://api.whatsapp.com/send?phone=23058533374&text=Good Day, I am interested in purchasing the ${item} listed on your website.`;
     }
 
