@@ -56,7 +56,7 @@ const showNav=ref(false)
         </div>
     </div>
  </div>
-   <div class="flex sm:hidden mr-4 bg-white p-0.5 rounded-sm" @click="toggleNav()">
+   <div class="flex sm:hidden mr-4  p-0.5 rounded-sm" @click="toggleNav()">
     <NavIcon class="w-7 h-7 "/>
     </div>
  </div>
