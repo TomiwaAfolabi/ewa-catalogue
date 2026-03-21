@@ -5,7 +5,7 @@ import { ref, computed } from 'vue'
   import DefaultLayout from './layouts/DefaultLayout.vue';
 const route = useRoute()
 const layouts:any  ={DefaultLayout};
-const layout = computed(() => layouts[route.meta.layout] || DefaultLayout)
+const layout = computed(() => layouts[route.meta.layout as string] || DefaultLayout)
 </script>
 
 <template>
