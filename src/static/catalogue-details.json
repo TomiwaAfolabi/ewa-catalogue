@@ -1,0 +1,169 @@
+[
+    {
+         "id": "01",
+        "imgSrc":"/men/men-catalogue-images/blue-shorts/blue-linen-wide.jpg",
+        "title":"Blue Sac Linen Trouser",
+        "sizes":{
+            "length":"17.4 inches",
+            "waist":"34",
+            "thighWidth":"12.5 inches",
+            "overallSize":"72"
+        },
+        "price":15000,
+        "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/blue-shorts/blue-linen-wide.jpg","/men/men-catalogue-images/blue-shorts/blue-linen-wide-2.jpg","/men/men-catalogue-images/blue-shorts/blue-linen-wide-3.jpg"]
+    },
+     {
+        "id":"02",
+        "imgSrc":"/men/men-catalogue-images/blue-trouser/blue-linen-front.jpg",
+        "title":"Blue Sac Linen Trouser",
+        "sizes":{
+            "length":"42",
+            "waist":"34",
+            "overallSize":"72",
+            "thighWidth":"12.5 inches"
+        },
+        "price":20000,
+        "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/blue-trouser/blue-linen-front.jpg","/men/men-catalogue-images/blue-trouser/blue-linen-front-2.jpg","/men/men-catalogue-images/blue-trouser/blue-linen-front-3.jpg","/men/men-catalogue-images/blue-trouser/blue-linen-back.jpg","/men/men-catalogue-images/blue-trouser/blue-linen-back-2.png"]
+    },
+     {
+        "id":"03",
+        "imgSrc":"/men/men-catalogue-images/striped-longsleeve/stripped-long-sleeve.jpg",
+        "title":"Linen long sleeve T-shirt",
+        "sizes":{
+           "shirtlength":"28 inches",
+           "chest":"18.5 inches",
+            "neck":"5.2 inches",
+            "armWidth":"7.2 inches",
+          "armLength":"21 inches"
+        },
+        "price":18000,
+        "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/striped-longsleeve/stripped-long-sleeve.jpg","/men/men-catalogue-images/striped-longsleeve/stripped-long-sleeve-2.jpg"]
+    },
+     {
+        "id":"04",
+        "imgSrc":"/men/men-catalogue-images/cream-shirt/v-neck-shirt.jpg",
+        "title":"White stained linen V-neck T-shirt",
+        "sizes":{
+           "length":"28 inches",
+           "chest":"20 inches",
+             "armWidth":"7.5 inches",
+           "armLength":"9 inches"
+        },
+        "price":15000,
+        "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/cream-shirt/v-neck-shirt.jpg","/men/men-catalogue-images/cream-shirt/v-neck-shirt-2.jpg"]
+    },
+    {  
+       "id":"05",
+        "imgSrc":"/men/men-catalogue-images/cream-shirt-trouser/cream-linen-trouser-front.jpg",
+        "title":"White stained linen trouser (V-neck T-shirt)",
+        "sizes":{
+            "length":"44",
+            "waist":"34",
+            "thighWidth":"12.5 inches"
+        },
+        "price":35000,
+        "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/cream-shirt-trouser/cream-linen-trouser-front.jpg","/men/men-catalogue-images/cream-shirt-trouser/shirt-trouser-wide.jpg","/men/men-catalogue-images/cream-shirt-trouser/shirt-trouser-wide-2.jpg"]
+    },
+    { 
+         "id":"06",
+        "imgSrc":"/men/men-catalogue-images/brown-linen-cargo/brown-cargo-front.jpg",
+        "title":"Brown Sac Linen Cargo",
+        "sizes":{
+            "length":"42",
+            "waist":"34",
+            "thighWidth":"12.5 inches"
+        },
+        "price":25000,
+        "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/brown-linen-cargo/brown-cargo-front.jpg","/men/men-catalogue-images/brown-linen-cargo/brown-cargo-full.jpg","/men/men-catalogue-images/brown-linen-cargo/brown-cargo-front-2.jpg","/men/men-catalogue-images/brown-linen-cargo/brown-cargo-front-3.jpg"]
+    },
+    { 
+         "id":"07",
+        "imgSrc":"/men/men-catalogue-images/brown-linen-trouser/brown-linen-font-2.jpg",
+        "title":"Brown Linen Trouser",
+        "sizes":{
+            "length":"40",
+            "waist":"34",
+            "thighWidth":"12.5 inches"
+        },
+        "price":20000,
+        "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/brown-linen-trouser/brown-linen-font-2.jpg","/men/men-catalogue-images/brown-linen-trouser/brown-linen-front.jpg","/men/men-catalogue-images/brown-linen-trouser/brown-linen-long.jpg", "/men/men-catalogue-images/brown-linen-trouser/brown-linen-backfront.jpg"]
+    },
+     { 
+         "id":"08",
+        "imgSrc":"/men/men-catalogue-images/light-brown-linen-shorts/light-brown-front-2.jpg",
+        "title":"Light Brown Linen Shorts",
+        "sizes":{
+            "length":"42",
+            "waist":"34",
+            "thighWidth":"12.5 inches"
+        },
+        "price":15000,
+        "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/light-brown-linen-shorts/light-brown-front-2.jpg","/men/men-catalogue-images/light-brown-linen-shorts/light-brown-front.jpg","/men/men-catalogue-images/light-brown-linen-shorts/light-brown-back.jpg"]
+    },
+     { 
+         "id":"09",
+        "imgSrc":"/men/men-catalogue-images/black-linen-trouser/black-linen-front.jpg",
+        "title":"Black Linen Trouser",
+        "sizes":{
+            "length":"42",
+            "waist":"34",
+            "thighWidth":"12.5 inches"
+        },
+        "price":20000,
+        "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/black-linen-trouser/black-linen-front.jpg","/men/men-catalogue-images/black-linen-trouser/black-linen-full.jpg"]
+    },
+     { 
+        "id":"10",
+        "imgSrc":"/men/men-catalogue-images/cream-trouser-shirt/stripped-shirt-short.jpg",
+        "title":"Striped Linen Short Sleeve Tshirt",
+        "sizes":{
+            "length":"27 inches",
+           "chest":"18.5 inches",
+           "armWidth":"7.5 inches",
+           "armLength":"8 inches"
+        },
+        "price":15000,
+        "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/cream-trouser-shirt/stripped-shirt-short.jpg","/men/men-catalogue-images/cream-trouser-shirt/stripped-shirt-shortsleeve.jpg","/men/men-catalogue-images/cream-trouser-shirt/stripped-shirt-trouser.jpg"]
+    },
+     {
+          "id":"1",
+        "imgSrc":"/men/men-catalogue-images/stripped-shortsleeve-shirt/stripped-shortsleeve.jpg",
+        "title":"Cream Stripped Linen Shirt",
+        "sizes":{
+           "length":"26.4 inches",
+           "chest":"17.3 inches",
+            "armWidth":"7.5 inches",
+           "armLength":"9 inches"
+        },
+        "price":15000,
+         "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/stripped-shortsleeve-shirt/stripped-shortsleeve.jpg","/men/men-catalogue-images/stripped-shortsleeve-shirt/stripped-shortsleeve-front.jpg"]
+    },
+     {
+          "id":"12",
+        "imgSrc":"/men/men-catalogue-images/white-linen/white-linen-wide.jpg",
+        "title":"White Linen Shirt & Trouser",
+        "sizes":{
+            "length":"44",
+            "shirtlength":"27.5 inches",
+            "waist":"36",
+            "thighWidth":"12.5 inches",
+           "chest":"20 inches",
+          "armWidth":"8 inches",
+          "armLength":"9 inches"
+        },
+        "price":35000,
+         "currency_symbol":"₦",
+        "images":["/men/men-catalogue-images/white-linen/white-linen-wide.jpg","/men/men-catalogue-images/white-linen/white-linen-wide-2.jpg"]
+    }
+] 

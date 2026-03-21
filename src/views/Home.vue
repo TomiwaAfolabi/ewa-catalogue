@@ -1,0 +1,31 @@
+<script setup lang="ts"></script>
+
+<template>
+<div class="w-full h-screen flex justify-center items-center">
+    <div class="relative h-full flex justify-center items-center">
+     <div class=" w-96 h-96 rounded-lg border-2 homepageHeight  ">
+    </div>
+    <div class="absolute homepageText items-center">
+    <div class="relative flex justify-center mb-4">
+        <img src="/logo/EwaLogo.jpg" class="w-40 h-40 rounded-lg items-center"/>
+    </div>
+     <p  >Official Website Coming Soon...</p>
+    </div>
+    </div>
+    
+</div>
+
+</template>
+
+<style scoped>
+.homepageHeight{
+    height:50%;
+   background-color: #5d6658;
+    border-color: #ffffe3;
+     opacity:55%;
+     
+}
+.homepageText{
+color: #C4D8E2;
+}
+</style>
