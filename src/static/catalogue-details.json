@@ -1,47 +1,5 @@
 [
-    {
-         "id": "01",
-        "imgSrc":"/men/men-catalogue-images/blue-shorts/blue-linen-wide.jpg",
-        "title":"Blue Sac Linen Shorts",
-        "sizes":{
-            "length":"17.4 inches",
-            "waist":"34",
-            "thighWidth":"12.5 inches",
-            "overallSize":"72"
-        },
-        "price":15000,
-        "currency_symbol":"₦",
-        "images":["/men/men-catalogue-images/blue-shorts/blue-linen-wide.jpg","/men/men-catalogue-images/blue-shorts/blue-linen-wide-2.jpg","/men/men-catalogue-images/blue-shorts/blue-linen-wide-3.jpg"]
-    },
-     {
-        "id":"02",
-        "imgSrc":"/men/men-catalogue-images/blue-trouser/blue-linen-front.jpg",
-        "title":"Blue Sac Linen Trouser",
-        "sizes":{
-            "length":"42",
-            "waist":"34",
-            "overallSize":"72",
-            "thighWidth":"12.5 inches"
-        },
-        "price":20000,
-        "currency_symbol":"₦",
-        "images":["/men/men-catalogue-images/blue-trouser/blue-linen-front.jpg","/men/men-catalogue-images/blue-trouser/blue-linen-front-2.jpg","/men/men-catalogue-images/blue-trouser/blue-linen-front-3.jpg","/men/men-catalogue-images/blue-trouser/blue-linen-back.jpg","/men/men-catalogue-images/blue-trouser/blue-linen-back-2.png"]
-    },
-     {
-        "id":"03",
-        "imgSrc":"/men/men-catalogue-images/striped-longsleeve/stripped-long-sleeve.jpg",
-        "title":"Linen long sleeve T-shirt",
-        "sizes":{
-           "shirtlength":"28 inches",
-           "chest":"18.5 inches",
-            "neck":"5.2 inches",
-            "armWidth":"7.2 inches",
-          "armLength":"21 inches"
-        },
-        "price":18000,
-        "currency_symbol":"₦",
-        "images":["/men/men-catalogue-images/striped-longsleeve/stripped-long-sleeve.jpg","/men/men-catalogue-images/striped-longsleeve/stripped-long-sleeve-2.jpg"]
-    },
+  
      {
         "id":"04",
         "imgSrc":"/men/men-catalogue-images/cream-shirt/v-neck-shirt.jpg",
