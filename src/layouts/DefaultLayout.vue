@@ -1,17 +1,31 @@
 <script setup lang="ts">
-  import NavBar from '@/components/navbar/nav-bar.vue';
+import AppNavBar from '@/components/layout/AppNavBar.vue'
+import AppFooter from '@/components/layout/AppFooter.vue'
 </script>
 
 <template>
-  <main class="h-screen bg-[url(/default-homepage-snapshots/ewa-default-homepage.jpg)] bg-center ">
-    <NavBar/>
-     <slot/>
-  </main>
-  <footer class="text-white footer h-20 flex justify-center items-center relative"><div class="absolute">© Ewa 2025</div></footer>
+  <div class="site-wrapper">
+    <AppNavBar />
+    <main class="site-main">
+      <slot />
+    </main>
+    <AppFooter />
+  </div>
 </template>
+
 <style scoped>
-.footer{
-    background-color: #d5c58a;
-    opacity: 80%;
+.site-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--ivory);
+}
+
+.site-main {
+  flex: 1;
+  background-image: url('/default-homepage-snapshots/ewa-default-homepage.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 </style>

@@ -1,3 +1,126 @@
 @import "tailwindcss";
 
+/* ── EWA Design Tokens ───────────────────────────────────────────────────── */
+:root {
+  --terra:       #B5522A;
+  --terra-light: #E8C4A8;
+  --terra-pale:  #F5EDE4;
+  --gold:        #C9A84C;
+  --gold-light:  #EDD898;
+  --ivory:       #FAF6EF;
+  --ink:         #1C1310;
+  --ink-soft:    #4A3728;
+  --muted:       #8B7355;
+  --olive:       #5C6040;
+  --plum:        #3D2035;
 
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans:  'Jost', system-ui, sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+
+  --shadow-card: 0 4px 24px rgba(28, 19, 16, 0.10);
+  --shadow-elevated: 0 12px 48px rgba(28, 19, 16, 0.18);
+
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.6s ease;
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--ivory);
+  color: var(--ink);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  line-height: 1.1;
+}
+
+/* ── Focus visible ───────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--terra);
+  outline-offset: 3px;
+}
+
+/* ── Scrollbar styling ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--terra-light); border-radius: 99px; }
+
+/* ── Utility classes ─────────────────────────────────────────────────────── */
+.font-serif   { font-family: var(--font-serif); }
+.text-terra   { color: var(--terra); }
+.text-gold    { color: var(--gold); }
+.text-muted   { color: var(--muted); }
+.text-ink     { color: var(--ink); }
+.bg-ivory     { background-color: var(--ivory); }
+.bg-terra     { background-color: var(--terra); }
+.bg-ink       { background-color: var(--ink); }
+
+.btn-primary {
+  display: inline-block;
+  background: var(--terra);
+  color: var(--ivory);
+  padding: 12px 32px;
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  font-weight: 400;
+  cursor: pointer;
+  border: none;
+  transition: background var(--transition-base);
+  font-family: var(--font-sans);
+}
+.btn-primary:hover { background: var(--plum); }
+
+.btn-ghost {
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 300;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--transition-base), color var(--transition-base);
+  font-family: var(--font-sans);
+  padding: 4px 0;
+}
+.btn-ghost:hover { color: var(--terra); border-color: var(--terra-light); }
+
+/* ── Section label ───────────────────────────────────────────────────────── */
+.section-label {
+  font-size: 10px;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 400;
+  margin-bottom: 24px;
+}
+
+/* ── Marquee animation ───────────────────────────────────────────────────── */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ── Page fade transition (used in App.vue) ──────────────────────────────── */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.page-enter-from { opacity: 0; transform: translateY(8px); }
+.page-leave-to   { opacity: 0; transform: translateY(-8px); }

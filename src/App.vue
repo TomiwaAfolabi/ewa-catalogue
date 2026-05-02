@@ -1,18 +1,36 @@
-
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-  import { RouterLink, RouterView,useRoute } from 'vue-router'
-  import DefaultLayout from './layouts/DefaultLayout.vue';
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
+
+const layouts: Record<string, any> = { DefaultLayout }
 const route = useRoute()
-const layouts:any  ={DefaultLayout};
-const layout = computed(() => layouts[route.meta.layout as string] || DefaultLayout)
+const layout = computed(
+  () => layouts[route.meta.layout as string] ?? DefaultLayout
+)
 </script>
 
 <template>
-   <component :is="layout">
-    <router-view/>
-   </component>
-
+  <component :is="layout">
+    <router-view v-slot="{ Component, route: r }" :key="route.fullPath">
+      <transition name="page" mode="out-in">
+        <component :is="Component" :key="r.fullPath" />
+      </transition>
+    </router-view>
+  </component>
 </template>
 
-<style scoped></style>
+<style>
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>
