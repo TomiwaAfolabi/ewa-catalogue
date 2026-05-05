@@ -145,7 +145,7 @@ function toggleMobile() {
         <button
           class="hamburger"
           @click="toggleMobile"
-          :aria-expanded="String(mobileOpen)"
+          :aria-expanded="mobileOpen"
           :aria-label="mobileOpen ? 'Close navigation menu' : 'Open navigation menu'"
         >
           <span
