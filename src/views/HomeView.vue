@@ -1,13 +1,84 @@
 <script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useProductStore } from '@/stores/productStore'
+import type { Product } from '@/types'
+
 const router = useRouter()
+const productStore = useProductStore()
+const scrollStripEl = ref<HTMLElement | null>(null)
+const heroRef = ref<HTMLElement | null>(null)
+const brandSectionRef = ref<HTMLElement | null>(null)
+
+let brandResizeObserver: ResizeObserver | null = null
+
+/** Hero min-height = ½ of section 3 (brand) height — updates when brand layout changes. */
+function syncHeroMinHeightToBrand() {
+  const brand = brandSectionRef.value
+  const hero = heroRef.value
+  if (!brand || !hero) return
+  const h = brand.offsetHeight
+  if (h < 40) return
+  hero.style.minHeight = `${Math.round(h * 0.5)}px`
+}
+
+function formatPrice(price: number, symbol: string) {
+  return `${symbol}\u00a0${price.toLocaleString('en-NG')}`
+}
+
+/** Up to 8 pieces: featured first, then the rest of the catalogue. */
+const spotlightProducts = computed((): Product[] => {
+  const list = productStore.products
+  if (!list.length) return []
+  const featured = list.filter(p => p.featured)
+  const rest = list.filter(p => !p.featured)
+  return [...featured, ...rest].slice(0, 8)
+})
+
+function openProduct(p: Product) {
+  router.push({ name: 'catalogue-detail', params: { id: p.id } })
+}
+
+function scrollStrip(direction: -1 | 1) {
+  const el = scrollStripEl.value
+  if (!el) return
+  const delta = el.clientWidth * 0.45 * direction
+  const smooth =
+    typeof window !== 'undefined' &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  el.scrollBy({ left: delta, behavior: smooth ? 'smooth' : 'instant' })
+}
+
+onMounted(async () => {
+  if (!productStore.products.length) {
+    try {
+      await productStore.fetchProducts()
+    } catch {
+      /* store handles error state */
+    }
+  }
+
+  await nextTick()
+  syncHeroMinHeightToBrand()
+
+  const brand = brandSectionRef.value
+  if (brand && typeof ResizeObserver !== 'undefined') {
+    brandResizeObserver = new ResizeObserver(() => syncHeroMinHeightToBrand())
+    brandResizeObserver.observe(brand)
+  }
+})
+
+onBeforeUnmount(() => {
+  brandResizeObserver?.disconnect()
+  brandResizeObserver = null
+})
 </script>
 
 <template>
   <!-- ── NAV already in layout, this is page content ── -->
 
   <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
-  <section class="hero">
+  <section ref="heroRef" class="hero home-reveal" aria-label="Introduction">
     <div class="hero-left">
       <div class="rebrand-badge">✦ A New Chapter Begins</div>
       <h1 class="hero-headline">
@@ -32,6 +103,7 @@ const router = useRouter()
     <div class="hero-right">
       <div class="hero-fabric-bg" />
       <div class="hero-center-art">
+        <div class="hero-emblem-float" aria-hidden="true">
         <svg class="lily-emblem" viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg">
           <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C"/>
           <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(60 140 140)"/>
@@ -43,6 +115,7 @@ const router = useRouter()
           <circle cx="140" cy="140" r="14" fill="#C9A84C"/>
           <circle cx="140" cy="140" r="110" stroke="#C9A84C" stroke-width="1" stroke-dasharray="4 6" fill="none"/>
         </svg>
+        </div>
       </div>
       <div class="hero-quote">
         <p class="hero-quote-text">"He carries culture in his walk<br />and confidence in his cloth."</p>
@@ -51,55 +124,183 @@ const router = useRouter()
     </div>
   </section>
 
-  <!-- ── MARQUEE ───────────────────────────────────────────────────────────── -->
-  <div class="marquee-bar" aria-hidden="true">
-    <div class="marquee-track">
-      <div class="marquee-inner">
-        <span>Culture</span><span class="dot">✦</span>
-        <span>Heritage</span><span class="dot">✦</span>
-        <span>Elegance</span><span class="dot">✦</span>
-        <span>Craftsmanship</span><span class="dot">✦</span>
-        <span>Individuality</span><span class="dot">✦</span>
-        <span>Ewa · Yoruba for Beauty</span><span class="dot">✦</span>
-        <span>Culture</span><span class="dot">✦</span>
-        <span>Heritage</span><span class="dot">✦</span>
-        <span>Elegance</span><span class="dot">✦</span>
-        <span>Craftsmanship</span><span class="dot">✦</span>
-        <span>Individuality</span><span class="dot">✦</span>
-        <span>Ewa · Yoruba for Beauty</span><span class="dot">✦</span>
+  <!-- ── CTA + featured slideshow (section 2 — full-width band) ────────────── -->
+  <section
+    class="section-cta home-reveal home-reveal--delay-1"
+    aria-labelledby="cta-heading"
+  >
+    <div class="cta-layout">
+      <div class="cta-copy">
+        <p class="cta-eyebrow">The collection</p>
+        <h2 id="cta-heading" class="cta-headline">
+          Ready to wear your <em>heritage</em>?
+        </h2>
+        <p class="cta-lead">
+          Shop linen pieces made for everyday confidence — breathable fabrics, careful tailoring, and silhouettes rooted in African elegance.
+        </p>
+        <p class="cta-body">
+          Browse the full catalogue for measurements, fabric notes, and styling ideas. Tap a featured piece to open its detail page.
+        </p>
+        <div class="cta-actions">
+          <button type="button" class="btn-primary" @click="router.push({ name: 'catalogue' })">
+            Shop the catalogue
+          </button>
+          <button type="button" class="btn-ghost btn-ghost--light" @click="router.push({ name: 'catalogue' })">
+            View all pieces
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ── STORY ─────────────────────────────────────────────────────────────── -->
-  <section class="section-story">
-    <div class="section-label">Our Story</div>
-    <div class="story-content">
-      <h2>Born from passion.<br /><em>Built for belonging.</em></h2>
-      <p>
-        Ewa was born out of a deep longing — to see African beauty reflected
-        back in clothing that feels both ancient and completely now. Inspired
-        by the richness of heritage fabrics, the dignity of our grandmothers,
-        and the fearlessness of today's generation.
-      </p>
-      <p>
-        Every piece we create is an act of storytelling. A celebration of
-        self-expression, of grace, of individuality. We don't just make
-        clothes — we create languages for people to speak in.
-      </p>
-      <div class="story-divider" />
-      <div class="yoruba-meaning">
-        <span class="yoruba-word">Ewa.</span>
-        <span class="yoruba-def">Yoruba (n.) — Beauty. The kind that is felt as much as seen.</span>
+    <!-- Cream strip — full viewport width (edge to edge) -->
+    <div class="cta-slider-bleed">
+      <div class="cta-slider-wrap">
+        <template v-if="spotlightProducts.length">
+          <div class="cta-slider-inner">
+            <div class="cta-strip-toolbar">
+             
+              <div class="cta-scroll-btns">
+                <button
+                  type="button"
+                  class="cta-icon-btn"
+                  aria-label="Scroll collection left"
+                  @click="scrollStrip(-1)"
+                >
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M11 4L6 9l5 5"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="cta-icon-btn"
+                  aria-label="Scroll collection right"
+                  @click="scrollStrip(1)"
+                >
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M7 4l5 5-5 5"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="cta-slider">
+            <div
+              ref="scrollStripEl"
+              class="cta-scroll"
+              role="region"
+              aria-label="Collection highlights"
+              aria-describedby="cta-scroll-desc"
+            >
+              <article
+                v-for="p in spotlightProducts"
+                :key="p.id"
+                class="cta-scroll-card"
+              >
+                <button
+                  type="button"
+                  class="cta-scroll-card__visual"
+                  @click="openProduct(p)"
+                >
+                  <img
+                    :src="p.imgSrc"
+                    :alt="p.title"
+                    width="280"
+                    height="374"
+                    loading="lazy"
+                    decoding="async"
+                    class="cta-scroll-card__img"
+                  />
+                  <span class="cta-scroll-card__shine" aria-hidden="true" />
+                </button>
+                <div class="cta-scroll-card__meta">
+                  <p class="cta-scroll-card__title">{{ p.title }}</p>
+                  <p class="cta-scroll-card__price">
+                    {{ formatPrice(p.price, p.currency_symbol) }}
+                  </p>
+                  <button type="button" class="cta-scroll-card__link" @click="openProduct(p)">
+                    View piece
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              </article>
+            </div>
+          </div>
+        </template>
+
+        <div
+          v-else-if="productStore.loading"
+          class="cta-slider cta-slider--placeholder"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span class="sr-only">Loading collection highlights</span>
+          <div class="cta-slider-inner cta-slider-inner--flush">
+            <div class="cta-scroll cta-scroll--skeleton">
+              <div v-for="i in 8" :key="i" class="cta-scroll-sk" aria-hidden="true">
+                <div class="cta-scroll-sk__img" />
+                <div class="cta-scroll-sk__line" />
+                <div class="cta-scroll-sk__line cta-scroll-sk__line--short" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else
+          class="cta-slider cta-slider--empty"
+          role="status"
+        >
+          <div class="cta-slider-inner">
+            <p class="cta-empty-text">Pieces will appear here once the catalogue loads.</p>
+            <button type="button" class="btn-primary" @click="router.push({ name: 'catalogue' })">
+              Open the shop
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Brand mark + story (section 3) ───────────────────────────────────── -->
+  <section
+    ref="brandSectionRef"
+    class="section-brand home-reveal home-reveal--delay-2"
+    aria-labelledby="brand-heading"
+  >
+    <div class="brand-split">
+      <div class="brand-logo-col">
+        <img
+          src="/brand/ewa-logo.png"
+          class="brand-logo"
+          alt="ẹwà man — Ewa wordmark with a line-drawn profile, Yoruba for beauty"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+      <div class="brand-copy">
+        <p class="section-label">The mark</p>
+        <h2 id="brand-heading" class="brand-title">
+          Beauty you can <em>wear</em>
+        </h2>
+        <p class="brand-lead">
+          <strong>ẹwà</strong> (Ewa) is Yoruba for beauty — not only what you see, but what you feel in fabric against skin and in how you move through the world.
+        </p>
+        <p class="brand-body">
+          Our mark pairs that idea with the Ewa man: deliberate, rooted, and modern. Every piece in the collection is cut and finished to honour the same standard — linen you can live in, tailoring you can trust, and a quiet confidence that needs no loud label.
+        </p>
+        <p class="brand-body">
+          When you shop with us, you are choosing clothes that carry culture forward: wearable, intentional, and unapologetically refined.
+        </p>
       </div>
     </div>
   </section>
 
   <!-- ── PILLARS ───────────────────────────────────────────────────────────── -->
-  <section class="section-pillars">
+  <section class="section-pillars home-reveal home-reveal--delay-3" aria-labelledby="pillars-heading">
     <div class="pillars-header">
       <div class="section-label" style="text-align:center;">Our Promise</div>
-      <h2>What we stand for</h2>
+      <h2 id="pillars-heading">What we stand for</h2>
     </div>
     <div class="pillars-grid">
       <div class="pillar">
@@ -130,30 +331,59 @@ const router = useRouter()
       </div>
     </div>
   </section>
-
-  <!-- ── CTA ───────────────────────────────────────────────────────────────── -->
-  <section class="section-cta">
-    <div class="cta-inner">
-      <div class="section-label" style="text-align:center; margin-bottom:16px;">The Collection</div>
-      <h2 class="cta-headline">Ready to wear your heritage?</h2>
-      <p class="cta-body">Explore the full catalogue of linen pieces crafted for the modern African man.</p>
-      <button class="btn-primary" @click="router.push({ name: 'catalogue' })">
-        Shop Now ↗
-      </button>
-    </div>
-  </section>
 </template>
 
 <style scoped>
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Gentle section entrances (honours reduced motion below) */
+.home-reveal {
+  opacity: 0;
+  animation: homeRise 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.home-reveal--delay-1 { animation-delay: 0.06s; }
+.home-reveal--delay-2 { animation-delay: 0.12s; }
+.home-reveal--delay-3 { animation-delay: 0.18s; }
+
+@keyframes homeRise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-reveal {
+    opacity: 1;
+    animation: none;
+    transform: none;
+  }
+}
+
 /* ── Hero ────────────────────────────────────────────────────────────────── */
 .hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: calc(100vh - 72px);
+  height:680px;
+ 
 }
 
 .hero-left {
-  padding: 80px 64px;
+  padding: 40px 32px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -202,12 +432,12 @@ const router = useRouter()
 }
 
 .hero-body {
-  font-size: 15px;
-  line-height: 1.8;
-  color: rgba(250, 246, 239, 0.72);
-  max-width: 400px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: rgba(250, 246, 239, 0.88);
+  max-width: 440px;
   margin-bottom: 48px;
-  font-weight: 300;
+  font-weight: 400;
 }
 .hero-body strong { color: var(--terra); font-weight: 400; }
 
@@ -240,16 +470,34 @@ const router = useRouter()
   justify-content: center;
 }
 
+.hero-emblem-float {
+  animation: emblemFloat 14s ease-in-out infinite;
+}
+
 .lily-emblem {
   width: 300px;
   height: 300px;
   opacity: 0.2;
-  animation: slowSpin 60s linear infinite;
+  animation: slowSpin 72s linear infinite;
 }
 
 @keyframes slowSpin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+@keyframes emblemFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-emblem-float {
+    animation: none;
+  }
+  .lily-emblem {
+    animation: none;
+  }
 }
 
 .hero-quote {
@@ -276,86 +524,81 @@ const router = useRouter()
   color: var(--gold);
 }
 
-/* ── Marquee ──────────────────────────────────────────────────────────────── */
-.marquee-bar {
-  background: var(--ink);
-  padding: 16px 0;
-  overflow: hidden;
-}
-
-.marquee-track { overflow: hidden; white-space: nowrap; }
-
-.marquee-inner {
-  display: inline-block;
-  animation: marquee 24s linear infinite;
-}
-
-.marquee-inner span {
-  font-size: 11px;
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  color: var(--gold-light);
-  font-weight: 300;
-  margin: 0 24px;
-}
-
-.marquee-inner .dot {
-  color: var(--terra);
-  margin: 0;
-}
-
-/* ── Story ────────────────────────────────────────────────────────────────── */
-.section-story {
-  padding: 100px 10% 100px;
-  max-width: 900px;
-  margin: 0 auto;
+/* ── Brand logo + write-up (section 3 — same dark band as Our Story) ─────── */
+.section-brand {
+  width: 100%;
+  padding: 72px 64px 76px;
   background: rgba(28, 19, 16, 0.75);
+  border-top: 1px solid rgba(201, 168, 76, 0.1);
 }
 
-.story-content h2 {
+.brand-split {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(280px, 1fr);
+  gap: clamp(24px, 4vw, 48px);
+  align-items: center;
+}
+
+.brand-logo-col {
+  display: flex;
+ justify-content: center;
+
+}
+
+.brand-logo {
+  width: 80%;
+  height: 50%;
+  display: block;
+  border-radius: 10px;
+}
+
+.brand-copy {
+  text-align: left;
+}
+
+.brand-copy .section-label {
+  margin-bottom: 16px;
+}
+
+.brand-title {
   font-family: var(--font-serif);
-  font-size: clamp(36px, 4vw, 56px);
+  font-size: clamp(28px, 3.4vw, 44px);
   font-weight: 300;
   color: var(--ivory);
-  margin-bottom: 32px;
-  line-height: 1.1;
-}
-.story-content h2 em { font-style: italic; color: var(--terra); }
-
-.story-content p {
-  font-size: 16px;
-  line-height: 1.9;
-  color: rgba(250, 246, 239, 0.65);
-  font-weight: 300;
-  margin-bottom: 20px;
+  line-height: 1.12;
+  margin-bottom: 16px;
 }
 
-.story-divider {
-  width: 80px;
-  height: 1px;
-  background: linear-gradient(to right, var(--terra), transparent);
-  margin: 40px 0;
-}
-
-.yoruba-meaning {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.yoruba-word {
-  font-family: var(--font-serif);
-  font-size: 32px;
-  font-weight: 300;
+.brand-title em {
   font-style: italic;
-  color: var(--gold);
+  color: var(--terra);
 }
 
-.yoruba-def {
-  font-size: 13px;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  font-weight: 300;
+.brand-lead {
+  font-size: 16px;
+  line-height: 1.75;
+  color: rgba(250, 246, 239, 0.82);
+  margin-bottom: 12px;
+  font-weight: 400;
+}
+
+.brand-lead strong {
+  color: var(--terra-light);
+  font-weight: 500;
+}
+
+.brand-body {
+  font-size: 15px;
+  line-height: 1.75;
+  color: rgba(250, 246, 239, 0.78);
+  margin-bottom: 14px;
+  font-weight: 400;
+}
+
+.brand-body:last-child {
+  margin-bottom: 0;
 }
 
 /* ── Pillars ───────────────────────────────────────────────────────────────── */
@@ -409,45 +652,378 @@ const router = useRouter()
 }
 
 .pillar-text {
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--muted);
-  font-weight: 300;
+  font-size: 15px;
+  line-height: 1.75;
+  color: rgba(250, 246, 239, 0.78);
+  font-weight: 400;
 }
 
-/* ── CTA ───────────────────────────────────────────────────────────────────── */
+/* ── CTA + horizontal collection strip (section 2, compact) ─────────────── */
 .section-cta {
-  padding: 120px 64px;
-  background: rgba(61, 32, 53, 0.65);
-  text-align: center;
+  padding: 40px 0 44px;
+  width: 100%;
+  background: #ffffff;
+  color: var(--ink);
+  border-top: 1px solid rgba(28, 19, 16, 0.06);
 }
 
-.cta-inner {
-  max-width: 600px;
-  margin: 0 auto;
+.cta-layout {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 16px;
+  padding: 0 clamp(20px, 5vw, 64px);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 24px;
+  align-items: stretch;
+  gap: 0;
+}
+
+/* Full-bleed cream band behind the scroller (edge to edge) */
+.cta-slider-bleed {
+  width: 100%;
+  margin: 0;
+  padding: 14px 0 16px;
+  background: white;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.cta-slider-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 5vw, 64px);
+}
+
+.cta-slider-inner--flush {
+  padding-left: clamp(16px, 5vw, 56px);
+  padding-right: clamp(16px, 5vw, 56px);
+}
+
+.cta-copy {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.cta-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--terra);
+  font-weight: 600;
+  margin-bottom: 10px;
 }
 
 .cta-headline {
   font-family: var(--font-serif);
-  font-size: clamp(32px, 4vw, 52px);
-  font-weight: 300;
-  color: var(--ivory);
+  font-size: clamp(28px, 3.5vw, 44px);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.12;
+  margin-bottom: 8px;
+}
+
+.cta-headline em {
+  font-style: italic;
+  color: var(--terra);
+}
+
+.cta-lead {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  font-weight: 400;
+  margin-bottom: 6px;
 }
 
 .cta-body {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(74, 55, 40, 0.88);
+  font-weight: 400;
+  margin-bottom: 14px;
+}
+
+.cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px 28px;
+}
+
+.btn-ghost--light {
+  color: var(--ink-soft);
+  border-bottom: 1px solid rgba(181, 82, 42, 0.35);
+  padding: 8px 0;
+}
+.btn-ghost--light:hover {
+  color: var(--terra);
+  border-bottom-color: var(--terra);
+}
+
+/* ── Horizontal scroll: 4 cards visible, 8 items total ───────────────────── */
+.cta-slider-wrap {
+  width: 100%;
+  min-height: 0;
+}
+
+.cta-strip-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  margin-bottom: 6px;
+}
+
+.cta-scroll-hint {
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(74, 55, 40, 0.75);
+}
+
+.cta-scroll-btns {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cta-slider {
+  position: relative;
+  width: 100%;
+  padding: 6px 0 2px;
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.cta-scroll {
+  --cta-gap: 12px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 3 * var(--cta-gap)) / 4);
+  gap: var(--cta-gap);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: clamp(16px, 5vw, 56px);
+  padding: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cta-scroll:focus-visible {
+  outline: 2px solid var(--terra);
+  outline-offset: 4px;
+}
+
+.cta-scroll-card {
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cta-scroll-card__visual {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  box-shadow: 0 4px 18px rgba(28, 19, 16, 0.1);
+}
+
+.cta-scroll-card__visual:focus-visible {
+  outline: 2px solid var(--terra);
+  outline-offset: 3px;
+}
+
+.cta-scroll-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cta-scroll-card__visual:hover .cta-scroll-card__img {
+  transform: scale(1.03);
+}
+
+.cta-scroll-card__shine {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 58%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.cta-scroll-card__visual:hover .cta-scroll-card__shine {
+  opacity: 1;
+}
+
+.cta-scroll-card__meta {
+  text-align: center;
+  padding: 0 2px;
+}
+
+.cta-scroll-card__title {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+  margin: 0 0 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cta-scroll-card__price {
+  font-family: var(--font-serif);
   font-size: 15px;
-  line-height: 1.8;
-  color: rgba(250, 246, 239, 0.6);
-  font-weight: 300;
+  color: var(--terra);
+  margin: 0 0 4px;
+}
+
+.cta-scroll-card__link {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--terra);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  border-bottom: 1px solid rgba(181, 82, 42, 0.3);
+  padding-bottom: 1px;
+}
+
+.cta-scroll-card__link:hover {
+  color: var(--plum);
+  border-bottom-color: var(--plum);
+}
+
+.cta-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(28, 19, 16, 0.12);
+  background: #fff;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.cta-icon-btn:hover {
+  border-color: var(--terra);
+  color: var(--terra);
+  background: rgba(181, 82, 42, 0.06);
+}
+
+.cta-slider--placeholder {
+  padding: 12px 0 18px;
+}
+
+.cta-scroll--skeleton {
+  grid-auto-columns: calc((100% - 3 * var(--cta-gap)) / 4);
+}
+
+.cta-scroll-sk {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cta-scroll-sk__img {
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-sm);
+  background: #e8e2db;
+  animation: phPulse 1.3s ease-in-out infinite;
+}
+
+.cta-scroll-sk__line {
+  height: 10px;
+  border-radius: 4px;
+  background: #e4ddd6;
+  animation: phPulse 1.3s ease-in-out infinite;
+}
+
+.cta-scroll-sk__line--short {
+  width: 55%;
+  margin: 0 auto;
+}
+
+@keyframes phPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.cta-slider--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 28px 20px 32px;
+}
+
+.cta-slider--empty .cta-slider-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.cta-empty-text {
+  font-size: 14px;
+  color: var(--ink-soft);
+  max-width: 280px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-scroll-card__visual:hover .cta-scroll-card__img {
+    transform: none;
+  }
+  .cta-scroll-sk__img,
+  .cta-scroll-sk__line {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .pillars-grid { grid-template-columns: 1fr; }
+  .cta-scroll,
+  .cta-scroll--skeleton {
+    grid-auto-columns: calc((100% - var(--cta-gap)) / 2);
+  }
 }
 
 @media (max-width: 768px) {
@@ -455,8 +1031,36 @@ const router = useRouter()
   .hero-left { padding: 60px 24px; }
   .hero-left::after { display: none; }
   .hero-right { min-height: 300px; }
-  .section-story { padding: 60px 24px; }
   .section-pillars { padding: 60px 24px; }
-  .section-cta { padding: 80px 24px; }
+  .section-cta { padding: 32px 0 36px; }
+  .cta-layout {
+    padding: 0 20px;
+    margin-bottom: 14px;
+  }
+  .section-brand { padding: 48px 24px 52px; }
+  .brand-split {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .brand-copy {
+    text-align: center;
+  }
+  .brand-copy .section-label {
+    text-align: center;
+  }
+  .cta-strip-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cta-scroll-btns {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 520px) {
+  .cta-scroll,
+  .cta-scroll--skeleton {
+    grid-auto-columns: minmax(140px, 82%);
+  }
 }
 </style>

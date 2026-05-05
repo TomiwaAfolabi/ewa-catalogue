@@ -28,6 +28,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/about',
+      name: 'about',
+      component: () => import('@/views/AboutView.vue'),
+      meta: {
+        title: 'About us — EWA',
+        layout: 'DefaultLayout',
+      },
+    },
+    {
       path: '/catalogue',
       name: 'catalogue',
       component: () => import('@/views/CatalogueView.vue'),

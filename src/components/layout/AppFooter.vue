@@ -13,6 +13,7 @@ const router = useRouter()
 
       <div class="footer-links">
         <button class="footer-link" @click="router.push({ name: 'home' })">Home</button>
+        <button class="footer-link" @click="router.push({ name: 'about' })">About</button>
         <button class="footer-link" @click="router.push({ name: 'catalogue' })">Shop</button>
       </div>
 
