@@ -268,7 +268,11 @@ async function payWithPaystack() {
             </span>
           </li>
         </ul>
-        <p class="hint">Displayed prices are catalogue estimates. The charge matches your order total from our server (NGN, smallest unit).</p>
+        <p class="hint">Displayed prices are catalogue estimates.</p>
+        <p class="delivery-fee-caveat delivery-fee-caveat--inline" role="note">
+          <strong>Delivery not included.</strong>
+          The amount is for your piece(s) only, you would be required to pay for delivery fee separately depending on your location.
+        </p>
         <p v-if="cart.hasUnavailableItems" class="stock-alert" role="alert">
           One or more items are out of stock. Remove them to continue to payment.
         </p>
@@ -783,6 +787,21 @@ async function payWithPaystack() {
 .btn-pay:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .actions {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  .actions .btn-ghost,
+  .actions .btn-pay {
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+  }
 }
 
 .redirect-note {
