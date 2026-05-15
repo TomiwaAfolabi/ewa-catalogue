@@ -5,6 +5,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CartItem, Product } from '@/types'
+import { canPurchaseProduct, productStockQuantity } from '@/utils/inventory'
+
+/** Smallest currency unit for API alignment (fallback for legacy/static data). */
+function unitPriceKobo(p: Product): number {
+  if (typeof p.priceKobo === 'number' && Number.isFinite(p.priceKobo)) {
+    return p.priceKobo
+  }
+  return Math.round(p.price * 100)
+}
 
 export const useCartStore = defineStore('cart', () => {
   const items = ref<CartItem[]>([])
@@ -14,20 +23,34 @@ export const useCartStore = defineStore('cart', () => {
     items.value.reduce((sum, item) => sum + item.quantity, 0)
   )
 
+  /** Whole naira (rounded) for display only. */
   const totalPrice = computed(() =>
-    items.value.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+    items.value.reduce(
+      (sum, item) => sum + Math.round((unitPriceKobo(item.product) * item.quantity) / 100),
+      0,
+    )
   )
 
   const isEmpty = computed(() => items.value.length === 0)
 
-  function addItem(product: Product, quantity = 1) {
+  const hasUnavailableItems = computed(() =>
+    items.value.some((i) => !canPurchaseProduct(i.product)),
+  )
+
+  function addItem(product: Product, quantity = 1): boolean {
+    if (!canPurchaseProduct(product)) return false
+    const maxQty = Math.max(0, productStockQuantity(product))
+    if (maxQty <= 0) return false
+    const requested = Math.floor(Number(quantity)) || 1
+    const q = Math.min(maxQty, Math.max(1, requested))
     const existing = items.value.find(i => i.product.id === product.id)
     if (existing) {
-      existing.quantity += quantity
+      existing.quantity = Math.min(maxQty, existing.quantity + q)
     } else {
-      items.value.push({ product, quantity })
+      items.value.push({ product, quantity: q })
     }
     isOpen.value = true
+    return true
   }
 
   function removeItem(productId: string) {
@@ -36,9 +59,12 @@ export const useCartStore = defineStore('cart', () => {
 
   function updateQuantity(productId: string, quantity: number) {
     const item = items.value.find(i => i.product.id === productId)
-    if (item) {
-      if (quantity <= 0) removeItem(productId)
-      else item.quantity = quantity
+    if (!item) return
+    const maxQty = Math.max(0, productStockQuantity(item.product))
+    if (quantity <= 0 || maxQty <= 0) removeItem(productId)
+    else {
+      const next = Math.floor(Number(quantity))
+      item.quantity = Math.min(maxQty, Math.max(1, Number.isFinite(next) ? next : 1))
     }
   }
 
@@ -50,14 +76,25 @@ export const useCartStore = defineStore('cart', () => {
     isOpen.value = !isOpen.value
   }
 
-  // Returns payload shape expected by the backend order endpoint
-  function getOrderPayload(contact: string) {
+  function closeCart() {
+    isOpen.value = false
+  }
+
+  /** Payload for `POST /v1/orders` (matches `CreateOrderDto`). */
+  function getOrderPayload(extra?: {
+    shippingSnapshot?: Record<string, unknown>
+    notes?: string
+    shippingAmount?: number
+    taxAmount?: number
+  }) {
     return {
       items: items.value.map(i => ({
         productId: i.product.id,
         quantity: i.quantity,
+        expectedUnitPriceKobo: unitPriceKobo(i.product),
+        ...(i.selectedSize ? { selectedSize: i.selectedSize } : {}),
       })),
-      contact,
+      ...extra,
     }
   }
 
@@ -67,11 +104,13 @@ export const useCartStore = defineStore('cart', () => {
     totalItems,
     totalPrice,
     isEmpty,
+    hasUnavailableItems,
     addItem,
     removeItem,
     updateQuantity,
     clearCart,
     toggleCart,
+    closeCart,
     getOrderPayload,
   }
 })

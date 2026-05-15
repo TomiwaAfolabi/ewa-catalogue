@@ -1,71 +1,57 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// EWA Catalogue — Product Service (productService.ts)
-//
-// This is the FACADE layer that your components and stores call.
-// It transparently serves either mock JSON (now) or real API (later).
-// When your backend is ready, only this file needs to change — zero
-// component rewrites needed.
+// EWA Catalogue — Product facade (Nest API only)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import api, { useMockData } from './api'
-import mockProducts from '@/static/catalogue-details.json'
+import api from './api'
 import type { Product, PaginatedResponse } from '@/types'
+import { extractProductSizesInput, normalizeGarmentSizes, normalizeGarmentType } from '@/utils/measurements'
+import { inferStockQuantity } from '@/utils/inventory'
 
-// Simulate realistic async delay in development
-const mockDelay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms))
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
-// ── Mock implementations ──────────────────────────────────────────────────────
-
-async function getMockProducts(): Promise<PaginatedResponse<Product>> {
-
-  const products = mockProducts as Product[]
+function mapProduct(p: Product): Product {
+  const raw = p as unknown as Record<string, unknown>
+  const topGt = normalizeGarmentType(raw.garmentType ?? raw.garment_type)
   return {
-    data: products,
-    total: products.length,
-    page: 1,
-    perPage: products.length,
-    totalPages: 1,
+    ...p,
+    sizes: normalizeGarmentSizes(extractProductSizesInput(p)),
+    stockQuantity: inferStockQuantity(p),
+    ...(topGt ? { garmentType: topGt } : {}),
   }
 }
 
-async function getMockProductById(id: string): Promise<Product | undefined> {
-  await mockDelay(150)
-  return (mockProducts as Product[]).find(p => p.id === id)
-}
-
-// ── Public service interface ──────────────────────────────────────────────────
-
 export const productService = {
   async getAll(): Promise<PaginatedResponse<Product>> {
-    if (useMockData) return getMockProducts()
-    const res = await api.products.getAll()
-    return res.data
+    const res = await api.products.list()
+    return {
+      ...res.data,
+      data: res.data.data.map(mapProduct),
+    }
   },
 
   async getById(id: string): Promise<Product | undefined> {
-    if (useMockData) return getMockProductById(id)
-    const res = await api.products.getById(id)
-    return res.data
+    try {
+      if (UUID_RE.test(id)) {
+        const res = await api.products.getByUuid(id)
+        return mapProduct(res.data)
+      }
+      const res = await api.products.getByCatalogueKey(id)
+      return mapProduct(res.data)
+    } catch {
+      return undefined
+    }
   },
 
   async getFeatured(): Promise<Product[]> {
-    if (useMockData) {
-      await mockDelay(200)
-      return (mockProducts as Product[]).slice(0, 4)
-    }
-    const res = await api.products.getFeatured()
-    return res.data
+    const res = await api.products.featured(8)
+    return res.data.map(mapProduct)
   },
 
   async search(query: string): Promise<Product[]> {
-    if (useMockData) {
-      await mockDelay(200)
-      const q = query.toLowerCase()
-      return (mockProducts as Product[]).filter(p =>
-        p.title.toLowerCase().includes(q)
-      )
-    }
-    const res = await api.products.search(query)
-    return res.data
+    const q = query.trim()
+    if (!q) return []
+    const res = await api.products.search(q)
+    return res.data.map(mapProduct)
   },
 }

@@ -19,6 +19,7 @@ import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore } from '@/stores/productStore'
 import CatalogueCard from './CatalogueCard.vue'
+import EwaPageSpinner from '@/components/ui/EwaPageSpinner.vue'
 import type { Product } from '@/types'
 
 const router       = useRouter()
@@ -40,7 +41,10 @@ const sortedProducts = computed(() => {
 })
 
 function openProduct(product: Product) {
-  router.push({ name: 'catalogue-detail', params: { id: product.id } })
+  router.push({
+    name: 'catalogue-detail',
+    params: { id: (product.catalogueKey ?? product.id).toString() },
+  })
 }
 
 function clearSearch() {
@@ -171,14 +175,12 @@ function skipToGrid() {
       aria-label="Loading products"
       aria-busy="true"
     >
-      <div class="grid-panel__intro" aria-hidden="true">
-        <svg class="grid-panel__icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" width="18" height="18" aria-hidden="true">
-          <rect x="2.5" y="2.5" width="6" height="6" rx="1"/>
-          <rect x="11.5" y="2.5" width="6" height="6" rx="1"/>
-          <rect x="2.5" y="11.5" width="6" height="6" rx="1"/>
-          <rect x="11.5" y="11.5" width="6" height="6" rx="1"/>
-        </svg>
-        <p class="grid-panel__label">Loading collection</p>
+      <div class="grid-panel__intro grid-panel__intro--loading">
+        <EwaPageSpinner
+          size="lg"
+          label="Loading products. Please wait."
+          message="Curating the collection"
+        />
       </div>
       <div class="skeleton-grid">
         <div v-for="i in 6" :key="i" class="skeleton-card" aria-hidden="true">
@@ -194,7 +196,6 @@ function skipToGrid() {
         </div>
         </div>
       </div>
-      <span class="sr-only">Loading products, please wait…</span>
     </div>
 
     <!-- ── Error state ────────────────────────────── -->
@@ -261,13 +262,11 @@ function skipToGrid() {
           <span class="sr-only">, product list</span>
         </a>
       </div>
-      <p id="grid-panel-desc" class="grid-panel__desc">
-        Each card opens full details, imagery, and size guide. Use Tab to move between pieces; Enter or Space to open.
-      </p>
+    
       <div
         id="product-grid"
         ref="gridEl"
-        class="product-grid"
+        class="product-grid "
         role="list"
         tabindex="-1"
         aria-describedby="grid-panel-desc"
@@ -275,7 +274,7 @@ function skipToGrid() {
       >
         <div
           v-for="(product, i) in sortedProducts"
-          :key="product.id"
+          :key="(product.catalogueKey ?? product.id).toString()"
           role="listitem"
           class="grid-item"
           :style="{ '--delay': `${Math.min(i * 55, 400)}ms` }"
@@ -338,6 +337,15 @@ function skipToGrid() {
   align-items: center;
   gap: 10px 16px;
   margin-bottom: 8px;
+}
+
+.grid-panel__intro--loading {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 20px;
+  gap: 0;
 }
 
 .grid-panel__icon {
@@ -414,7 +422,7 @@ function skipToGrid() {
 /* ── Header ─────────────────────────────────────────── */
 .catalogue-header {
   text-align: center;
-  margin-bottom: 52px;
+  margin-bottom: 15px;
   position: relative;
 }
 
@@ -556,6 +564,7 @@ function skipToGrid() {
 }
 
 .sort-select {
+  width: 100%;
   appearance: none;
   background: rgba(250, 246, 239, 0.05);
   border: 1px solid rgba(201, 168, 76, 0.16);
@@ -604,9 +613,11 @@ function skipToGrid() {
 /* ── Product grid ───────────────────────────────────── */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 28px 22px;
+  justify-content: center;
   outline: none; /* managed via tabindex=-1 + focusable children */
+  margin-top: 30px;
 }
 
 /* Staggered entrance animation — disabled when user prefers reduced motion (WCAG 2.3.3) */
@@ -628,8 +639,9 @@ function skipToGrid() {
 /* ── Loading skeleton ───────────────────────────────── */
 .skeleton-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 28px 22px;
+  justify-content: center;
 }
 
 .skeleton-card {
@@ -749,11 +761,6 @@ function skipToGrid() {
 }
 
 /* ── Responsive ─────────────────────────────────────── */
-@media (max-width: 1100px) {
-  .product-grid,
-  .skeleton-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
 @media (max-width: 640px) {
   .catalogue-section { padding: 40px 16px 64px; }
   .grid-panel { padding: 16px 14px 20px; }
@@ -763,8 +770,10 @@ function skipToGrid() {
     text-align: right;
   }
   .product-grid,
-  .skeleton-grid { grid-template-columns: 1fr; }
-  .toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .skeleton-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .toolbar { flex-direction: column; align-items: stretch; gap: 20px; }
   .search-wrap { max-width: 100%; }
   .results-count { margin-left: 0; }
 }

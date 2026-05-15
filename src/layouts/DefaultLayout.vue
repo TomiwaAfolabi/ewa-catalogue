@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import AppNavBar from '@/components/layout/AppNavBar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import CartDrawer from '@/components/layout/CartDrawer.vue'
 </script>
 
 <template>
   <div class="site-wrapper">
     <AppNavBar />
+    <CartDrawer />
     <main class="site-main">
       <slot />
     </main>

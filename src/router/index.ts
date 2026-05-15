@@ -2,9 +2,13 @@
 // EWA Catalogue — Router (index.ts)
 //
 // All routes are lazy-loaded. Meta titles are set per-route.
-// Navigation guards are scaffolded and ready for auth once backend is live.
 // ─────────────────────────────────────────────────────────────────────────────
+import { nextTick } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
+import { useNavigationLoadingStore } from '@/stores/navigationLoadingStore'
+import { SITE_DESCRIPTION, SITE_NAME } from '@/config/site'
+import { applySiteMeta } from '@/utils/siteMeta'
 
 // Only Home is eager-loaded (it's the entry point)
 import HomeView from '@/views/HomeView.vue'
@@ -54,13 +58,54 @@ const router = createRouter({
         layout: 'DefaultLayout',
       },
     },
-    // ── Scaffold: add protected routes here when auth is ready ───────────────
-    // {
-    //   path: '/account',
-    //   name: 'account',
-    //   component: () => import('@/views/AccountView.vue'),
-    //   meta: { title: 'My Account — EWA', layout: 'DefaultLayout', requiresAuth: true },
-    // },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/LoginView.vue'),
+      meta: { title: 'Sign in — EWA', layout: 'DefaultLayout' },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/views/RegisterView.vue'),
+      meta: { title: 'Register — EWA', layout: 'DefaultLayout' },
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('@/views/ForgotPasswordView.vue'),
+      meta: { title: 'Forgot password — EWA', layout: 'DefaultLayout' },
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('@/views/ResetPasswordView.vue'),
+      meta: { title: 'Reset password — EWA', layout: 'DefaultLayout' },
+    },
+    {
+      path: '/auth/callback',
+      name: 'auth-callback',
+      component: () => import('@/views/AuthCallbackView.vue'),
+      meta: { title: 'Signing in — EWA', layout: 'DefaultLayout' },
+    },
+    {
+      path: '/checkout/return',
+      name: 'checkout-return',
+      component: () => import('@/views/CheckoutReturnView.vue'),
+      meta: { title: 'Payment — EWA', layout: 'DefaultLayout' },
+    },
+    {
+      path: '/checkout',
+      name: 'checkout',
+      component: () => import('@/views/CheckoutView.vue'),
+      meta: { title: 'Checkout — EWA', layout: 'DefaultLayout' },
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('@/views/ProfileView.vue'),
+      meta: { title: 'My account — EWA', layout: 'DefaultLayout', requiresAuth: true },
+    },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
@@ -70,15 +115,44 @@ const router = createRouter({
   ],
 })
 
-// ── Global navigation guard: update document title ───────────────────────────
-router.beforeEach(to => {
-  document.title = (to.meta.title as string) || 'EWA'
+// ── Global navigation guard: auth + loading ─────────────────────────────────
+router.beforeEach((to, from) => {
+  if (from.matched.length && to.fullPath !== from.fullPath) {
+    useNavigationLoadingStore().start()
+  }
 
-  // ── Scaffold: uncomment once auth store is implemented ───────────────────
-  // const authStore = useAuthStore()
-  // if (to.meta.requiresAuth && !authStore.isLoggedIn) {
-  //   return { name: 'login', query: { redirect: to.fullPath } }
-  // }
+  const authStore = useAuthStore()
+  if (to.meta.requiresAuth && !authStore.isLoggedIn) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+})
+
+router.afterEach((to) => {
+  const pageTitle = (to.meta.title as string) || `${SITE_NAME} — Catalogue`
+  const noIndex =
+    to.name === 'login' ||
+    to.name === 'register' ||
+    to.name === 'checkout' ||
+    to.name === 'checkout-return' ||
+    to.name === 'auth-callback' ||
+    to.name === 'profile' ||
+    to.name === 'forgot-password' ||
+    to.name === 'reset-password'
+
+  applySiteMeta({
+    title: pageTitle,
+    description: (to.meta.description as string | undefined) ?? SITE_DESCRIPTION,
+    path: to.fullPath,
+    noIndex,
+  })
+
+  void nextTick(() => {
+    useNavigationLoadingStore().stop()
+  })
+})
+
+router.onError(() => {
+  useNavigationLoadingStore().stop()
 })
 
 export default router

@@ -14,15 +14,58 @@
 -->
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const router    = useRouter()
 const route     = useRoute()
 const cartStore = useCartStore()
+const authStore = useAuthStore()
 
 const mobileOpen = ref(false)
+const userMenuOpen = ref(false)
+
+const avatarLabel = computed(() => {
+  const u = authStore.user
+  if (!u) return 'Account'
+  const n = [u.firstName, u.lastName].filter(Boolean).join(' ')
+  return n || u.email
+})
+
+const initials = computed(() => {
+  const u = authStore.user
+  if (!u) return '?'
+  const f = u.firstName?.trim() ?? ''
+  const l = u.lastName?.trim() ?? ''
+  const fc = f.charAt(0)
+  const lc = l.charAt(0)
+  if (fc && lc) return `${fc}${lc}`.toUpperCase()
+  if (f.length >= 2) return f.slice(0, 2).toUpperCase()
+  if (fc) return `${fc}${f.charAt(1) || fc}`.toUpperCase()
+  return u.email.slice(0, 2).toUpperCase()
+})
+
+async function logout() {
+  userMenuOpen.value = false
+  mobileOpen.value = false
+  await authStore.logout()
+  if (route.name === 'checkout' || route.name === 'profile') {
+    void router.push({ name: 'home' })
+  }
+}
+
+function toggleUserMenu() {
+  userMenuOpen.value = !userMenuOpen.value
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    userMenuOpen.value = false
+  },
+)
 
 const navLinks = [
   { label: 'Home', name: 'home', path: '/' },
@@ -111,8 +154,16 @@ function toggleMobile() {
         </div>
       </div>
 
-      <!-- ── Right actions ──────────────────────────── -->
+      <!-- ── Right actions (cart left of avatar when signed in) ───────────── -->
       <div class="nav-actions">
+        <div v-if="!authStore.isLoggedIn" class="auth-links desktop-only">
+          <RouterLink class="auth-link" :to="{ name: 'login', query: { redirect: route.fullPath } }">
+            Sign in
+          </RouterLink>
+          <RouterLink class="auth-link auth-link--emph" :to="{ name: 'register' }">
+            Register
+          </RouterLink>
+        </div>
 
         <!-- Cart button -->
         <button
@@ -140,6 +191,52 @@ function toggleMobile() {
             </span>
           </Transition>
         </button>
+
+        <!-- Avatar immediately to the right of the cart (desktop) -->
+        <div v-if="authStore.isLoggedIn" class="user-wrap desktop-only">
+          <button
+            type="button"
+            class="avatar-btn"
+            :aria-expanded="userMenuOpen"
+            :aria-label="`Account menu for ${avatarLabel}`"
+            @click="toggleUserMenu"
+          >
+            <img
+              v-if="authStore.user?.avatarUrl"
+              :src="authStore.user.avatarUrl"
+              alt=""
+              class="avatar-img"
+              width="36"
+              height="36"
+              referrerpolicy="no-referrer"
+            >
+            <span v-else class="avatar-fallback" aria-hidden="true">{{ initials }}</span>
+          </button>
+          <Transition name="fade">
+            <div v-if="userMenuOpen" class="user-dd" role="menu">
+              <p class="user-dd-email">{{ authStore.user?.email }}</p>
+              <button
+                type="button"
+                class="user-dd-item"
+                role="menuitem"
+                @click="userMenuOpen = false; router.push({ name: 'profile' })"
+              >
+                <svg class="user-dd-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <path d="M7 3.5h6a1 1 0 0 1 1 1V17a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"/>
+                  <path d="M5 6.5h10M8 9.5h6M8 12.5h4"/>
+                </svg>
+                <span>Orders &amp; profile</span>
+              </button>
+              <button type="button" class="user-dd-item" role="menuitem" @click="logout">
+                <svg class="user-dd-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <path d="M7 17H4.5A1.5 1.5 0 0 1 3 15.5v-11A1.5 1.5 0 0 1 4.5 3H7"/>
+                  <path d="M13 14l4-4-4-4M8 10h8"/>
+                </svg>
+                <span>Sign out</span>
+              </button>
+            </div>
+          </Transition>
+        </div>
 
         <!-- Mobile hamburger — animated to × when open -->
         <button
@@ -209,6 +306,58 @@ function toggleMobile() {
             </svg>
           </button>
         </div>
+
+        <div v-if="authStore.isLoggedIn" role="listitem" class="mobile-auth-block">
+          <div class="mobile-user">
+            <span class="mobile-avatar" aria-hidden="true">
+              <img
+                v-if="authStore.user?.avatarUrl"
+                :src="authStore.user.avatarUrl"
+                alt=""
+                class="mobile-avatar-img"
+                width="40"
+                height="40"
+                referrerpolicy="no-referrer"
+              >
+              <template v-else>{{ initials }}</template>
+            </span>
+            <span class="mobile-user-email">{{ authStore.user?.email }}</span>
+          </div>
+          <button
+            type="button"
+            class="mobile-link mobile-link--full mobile-link--row"
+            @click="mobileOpen = false; router.push({ name: 'profile' })"
+          >
+            <svg class="mobile-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M7 3.5h6a1 1 0 0 1 1 1V17a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"/>
+              <path d="M5 6.5h10M8 9.5h6M8 12.5h4"/>
+            </svg>
+            <span>Orders &amp; profile</span>
+          </button>
+          <button type="button" class="mobile-link mobile-link--full mobile-link--row" @click="logout">
+            <svg class="mobile-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M7 17H4.5A1.5 1.5 0 0 1 3 15.5v-11A1.5 1.5 0 0 1 4.5 3H7"/>
+              <path d="M13 14l4-4-4-4M8 10h8"/>
+            </svg>
+            <span>Sign out</span>
+          </button>
+        </div>
+        <div v-else role="listitem" class="mobile-auth-block">
+          <RouterLink
+            class="mobile-link mobile-link--full"
+            :to="{ name: 'login', query: { redirect: route.fullPath } }"
+            @click="mobileOpen = false"
+          >
+            Sign in
+          </RouterLink>
+          <RouterLink
+            class="mobile-link mobile-link--full"
+            :to="{ name: 'register' }"
+            @click="mobileOpen = false"
+          >
+            Register
+          </RouterLink>
+        </div>
       </div>
     </Transition>
   </nav>
@@ -227,10 +376,12 @@ function toggleMobile() {
 }
 
 .nav-inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  padding: 0 48px;
+  column-gap: 16px;
+  padding-left: clamp(20px, 4vw, 48px);
+  padding-right: clamp(24px, 5vw, 56px);
   height: 72px;
   max-width: 1400px;
   margin: 0 auto;
@@ -239,6 +390,7 @@ function toggleMobile() {
 
 /* ── Logo ─────────────────────────────────────────── */
 .nav-logo {
+  justify-self: start;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -248,6 +400,7 @@ function toggleMobile() {
   padding: 4px;
   border-radius: var(--radius-sm);
   transition: opacity 0.2s;
+  min-width: 0;
 }
 .nav-logo:hover { opacity: 0.85; }
 .nav-logo:focus-visible {
@@ -289,6 +442,7 @@ function toggleMobile() {
 
 /* ── Desktop links ────────────────────────────────── */
 .nav-links {
+  justify-self: center;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -340,17 +494,205 @@ function toggleMobile() {
   bottom: 4px;
   left: 50%;
   transform: translateX(-50%);
-  width: 16px;
+  width: 70%;
   height: 2px;
   background: var(--terra);
   border-radius: 99px;
+ 
 }
 
 /* ── Right actions ────────────────────────────────── */
 .nav-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.desktop-only {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+.user-wrap {
+  position: relative;
+}
+
+.avatar-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 99px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid rgba(201, 168, 76, 0.35);
+  cursor: pointer;
+  background: rgba(250, 246, 239, 0.08);
+}
+.avatar-btn:focus-visible {
+  outline: 2px solid var(--terra);
+  outline-offset: 3px;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.user-dd {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  min-width: 220px;
+  background: #1c1310;
+  border: 1px solid rgba(201, 168, 76, 0.22);
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  z-index: 150;
+}
+
+.user-dd-email {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  opacity: 0.8;
+  word-break: break-all;
+  color: var(--ivory);
+}
+
+.user-dd-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid rgba(201, 168, 76, 0.12);
+  color: var(--ivory);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 10px 6px;
+}
+.user-dd-item:first-of-type {
+  border-top: none;
+}
+
+.user-dd-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.user-dd-item:hover {
+  color: var(--gold);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.auth-links {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.auth-link {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(250, 246, 239, 0.55);
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+}
+.auth-link:hover {
+  color: var(--ivory);
+}
+.auth-link--emph {
+  color: var(--gold);
+}
+
+.mobile-auth-block {
+  border-top: 1px solid rgba(201, 168, 76, 0.12);
+  padding-top: 14px;
+  margin-top: 8px;
+}
+
+.mobile-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 12px;
+}
+
+.mobile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 99px;
+  background: rgba(201, 168, 76, 0.2);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.mobile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mobile-user-email {
+  font-size: 0.72rem;
+  color: rgba(250, 246, 239, 0.65);
+  word-break: break-all;
+}
+
+.mobile-link--full {
+  width: 100%;
+}
+
+.mobile-link--row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-start;
 }
 
 /* Cart button */
@@ -500,9 +842,21 @@ function toggleMobile() {
 
 /* ── Responsive ───────────────────────────────────── */
 @media (max-width: 768px) {
-  .nav-inner    { padding: 0 20px; }
-  .nav-links    { display: none; }
-  .hamburger    { display: flex; }
-  .logo-tagline { display: none; }
+  .nav-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-left: clamp(16px, 4vw, 24px);
+    padding-right: clamp(20px, 5vw, 32px);
+  }
+  .nav-links {
+    display: none;
+  }
+  .hamburger {
+    display: flex;
+  }
+  .logo-tagline {
+    display: none;
+  }
 }
 </style>

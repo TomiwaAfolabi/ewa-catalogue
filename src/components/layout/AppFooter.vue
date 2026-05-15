@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { SITE_CONTACT_EMAIL, SITE_HOST, absoluteSiteUrl } from '@/config/site'
+
 const router = useRouter()
+const siteHomeUrl = absoluteSiteUrl('/')
 </script>
 
 <template>
@@ -19,6 +22,8 @@ const router = useRouter()
 
       <div class="footer-right">
         <p class="footer-tagline">A new era of Ewa begins here.</p>
+        <a class="footer-site" :href="siteHomeUrl">{{ SITE_HOST }}</a>
+        <a class="footer-mail" :href="`mailto:${SITE_CONTACT_EMAIL}`">{{ SITE_CONTACT_EMAIL }}</a>
       </div>
     </div>
 
@@ -93,6 +98,23 @@ const router = useRouter()
   font-size: 16px;
   font-style: italic;
   color: rgba(245, 237, 228, 0.4);
+  margin: 0 0 10px;
+}
+
+.footer-site,
+.footer-mail {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(201, 168, 76, 0.75);
+  text-decoration: none;
+  margin-top: 4px;
+  transition: color var(--transition-base);
+}
+
+.footer-site:hover,
+.footer-mail:hover {
+  color: var(--gold);
 }
 
 .footer-copy {

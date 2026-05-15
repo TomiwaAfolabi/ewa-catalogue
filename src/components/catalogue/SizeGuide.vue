@@ -6,33 +6,132 @@
   • aria-labelledby on the container ties heading to the group (WCAG 1.3.6)
   • Icons are aria-hidden; dd text carries full meaning (WCAG 1.1.1)
   • "Measured for this piece only" tooltip prevents user confusion
-    (Nielsen #6 — Recognition over recall, error prevention)
   • Direction icons (vertical / horizontal arrows) give immediate
     visual affordance for measurement type without extra reading
+  • SHIRT / TROUSER cm fields from API; legacy string keys still supported
   ─────────────────────────────────────────────────────────────────
 -->
 
 <script setup lang="ts">
-import type { ProductSizes } from '@/types'
+import { computed } from 'vue'
+import type { GarmentType, ProductSizes } from '@/types'
+import {
+  formatCm,
+  isMeasurementPresent,
+  normalizeGarmentSizes,
+  resolveGarmentType,
+} from '@/utils/measurements'
 
-defineProps<{ sizes: ProductSizes }>()
+const props = defineProps<{
+  /** Raw `sizes` JSON and/or merged `measurements` — normalized internally. */
+  sizes: ProductSizes | Record<string, unknown>
+  garmentType?: GarmentType | null
+}>()
 
-// Each measurement maps to a direction icon and plain label
-const sizeConfig: {
-  key: keyof ProductSizes
-  label: string
-  dir: 'v' | 'h'          // vertical or horizontal measurement
-  unit: string
-}[] = [
-  { key: 'length',      label: 'Length',       dir: 'v', unit: '' },
-  { key: 'shirtlength', label: 'Shirt Length',  dir: 'v', unit: '' },
-  { key: 'waist',       label: 'Waist',         dir: 'h', unit: '' },
-  { key: 'chest',       label: 'Chest Width',   dir: 'h', unit: '' },
-  { key: 'thighWidth',  label: 'Thigh Width',   dir: 'h', unit: '' },
-  { key: 'shoulder',    label: 'Shoulder',      dir: 'h', unit: '' },
-  { key: 'armWidth',    label: 'Arm Width',     dir: 'h', unit: '' },
-  { key: 'armLength',   label: 'Arm Length',    dir: 'v', unit: '' },
+/** Defensive copy: detail page usually receives sizes via productService already normalized. */
+const sizes = computed(() => normalizeGarmentSizes(props.sizes))
+
+type Dir = 'v' | 'h'
+type DisplayRow = { key: string; label: string; dir: Dir; value: string }
+
+const CM_SHIRT_FIELDS: { key: keyof ProductSizes; label: string; dir: Dir }[] = [
+  { key: 'chestWidthCm', label: 'Chest width', dir: 'h' },
+  { key: 'sleeveLengthCm', label: 'Sleeve length', dir: 'v' },
+  { key: 'shirtLengthCm', label: 'Shirt length', dir: 'v' },
 ]
+
+const CM_TROUSER_FIELDS: { key: keyof ProductSizes; label: string; dir: Dir }[] = [
+  { key: 'waistCm', label: 'Waist', dir: 'h' },
+  { key: 'trouserLengthCm', label: 'Trouser length', dir: 'v' },
+]
+
+const LEGACY_FIELDS: { key: keyof ProductSizes; label: string; dir: Dir }[] = [
+  { key: 'length', label: 'Length', dir: 'v' },
+  { key: 'shirtlength', label: 'Shirt length', dir: 'v' },
+  { key: 'waist', label: 'Waist', dir: 'h' },
+  { key: 'chest', label: 'Chest width', dir: 'h' },
+  { key: 'thighWidth', label: 'Thigh width', dir: 'h' },
+  { key: 'shoulder', label: 'Shoulder', dir: 'h' },
+  { key: 'armWidth', label: 'Arm width', dir: 'h' },
+  { key: 'armLength', label: 'Arm length', dir: 'v' },
+]
+
+const effectiveGarmentType = computed(() =>
+  resolveGarmentType(sizes.value, props.garmentType ?? null),
+)
+
+const hasCmShirt = computed(
+  () =>
+    isMeasurementPresent(sizes.value.chestWidthCm) ||
+    isMeasurementPresent(sizes.value.sleeveLengthCm) ||
+    isMeasurementPresent(sizes.value.shirtLengthCm),
+)
+
+const hasCmTrouser = computed(
+  () =>
+    isMeasurementPresent(sizes.value.waistCm) ||
+    isMeasurementPresent(sizes.value.trouserLengthCm),
+)
+
+function rowsFromCmConfig(
+  s: ProductSizes,
+  configs: { key: keyof ProductSizes; label: string; dir: Dir }[],
+): DisplayRow[] {
+  const out: DisplayRow[] = []
+  for (const c of configs) {
+    const raw = s[c.key]
+    const formatted = formatCm(raw as number | string | undefined | null)
+    if (formatted) out.push({ key: String(c.key), label: c.label, dir: c.dir, value: formatted })
+  }
+  return out
+}
+
+const displayRows = computed((): DisplayRow[] => {
+  const s = sizes.value
+  if (!s || typeof s !== 'object') return []
+
+  const mode = effectiveGarmentType.value
+
+  if (mode === 'SHIRT') return rowsFromCmConfig(s, CM_SHIRT_FIELDS)
+  if (mode === 'TROUSER') return rowsFromCmConfig(s, CM_TROUSER_FIELDS)
+
+  if (hasCmShirt.value && hasCmTrouser.value) {
+    return [
+      ...rowsFromCmConfig(s, CM_SHIRT_FIELDS),
+      ...rowsFromCmConfig(s, CM_TROUSER_FIELDS),
+    ]
+  }
+  if (hasCmShirt.value) return rowsFromCmConfig(s, CM_SHIRT_FIELDS)
+  if (hasCmTrouser.value) return rowsFromCmConfig(s, CM_TROUSER_FIELDS)
+
+  const legacy: DisplayRow[] = []
+  for (const c of LEGACY_FIELDS) {
+    const v = s[c.key]
+    if (!isMeasurementPresent(v)) continue
+    legacy.push({
+      key: String(c.key),
+      label: c.label,
+      dir: c.dir,
+      value: typeof v === 'number' ? formatCm(v)! : String(v).trim(),
+    })
+  }
+  return legacy
+})
+
+const usesCentimetres = computed(() => {
+  for (const row of displayRows.value) {
+    if (row.value.includes(' cm')) return true
+  }
+  return false
+})
+
+const typeBadge = computed((): string | null => {
+  const t = effectiveGarmentType.value
+  if (t === 'SHIRT') return 'Shirt'
+  if (t === 'TROUSER') return 'Trouser'
+  if (hasCmShirt.value && hasCmTrouser.value) return 'Shirt & trouser'
+  return null
+})
 </script>
 
 <template>
@@ -41,9 +140,7 @@ const sizeConfig: {
     aria-labelledby="sg-heading"
     role="region"
   >
-    <!-- Header -->
     <div class="sg-header">
-      <!-- Tape measure icon -->
       <svg class="sg-tape" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.4" width="16" height="16" aria-hidden="true">
         <rect x="1.5" y="7.5" width="19" height="7" rx="2"/>
         <line x1="5"  y1="7.5" x2="5"  y2="11"/>
@@ -53,45 +150,41 @@ const sizeConfig: {
         <line x1="17" y1="7.5" x2="17" y2="11"/>
       </svg>
       <h3 id="sg-heading" class="sg-title">Size Guide</h3>
+      <span v-if="typeBadge" class="sg-badge sg-badge--type" :aria-label="`Garment type: ${typeBadge}`">{{ typeBadge }}</span>
       <span class="sg-badge" aria-label="Measurements are for this specific item">This item only</span>
     </div>
 
-    <!-- Measurement list -->
     <div class="sg-body">
-      <dl class="sg-list">
-        <template v-for="cfg in sizeConfig" :key="cfg.key">
-          <div v-if="sizes[cfg.key]" class="sg-entry">
-
-            <!-- Direction icon -->
-            <div class="sg-dir-icon" aria-hidden="true" :title="cfg.dir === 'v' ? 'Vertical measurement' : 'Horizontal measurement'">
-              <!-- Vertical arrow (↕) -->
-              <svg v-if="cfg.dir === 'v'" viewBox="0 0 14 20" fill="none" stroke="currentColor" stroke-width="1.5" width="10" height="14">
-                <line x1="7" y1="2" x2="7" y2="18"/>
-                <path d="M4 5l3-3 3 3"/>
-                <path d="M4 15l3 3 3-3"/>
-              </svg>
-              <!-- Horizontal arrow (↔) -->
-              <svg v-else viewBox="0 0 20 14" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="10">
-                <line x1="2" y1="7" x2="18" y2="7"/>
-                <path d="M5 4l-3 3 3 3"/>
-                <path d="M15 4l3 3-3 3"/>
-              </svg>
-            </div>
-
-            <dt class="sg-label">{{ cfg.label }}</dt>
-            <dd class="sg-value">{{ sizes[cfg.key] }}</dd>
+      <p v-if="!displayRows.length" class="sg-empty">No measurements are listed for this piece yet.</p>
+      <dl v-else class="sg-list">
+        <div v-for="row in displayRows" :key="row.key" class="sg-entry">
+          <div class="sg-dir-icon" aria-hidden="true" :title="row.dir === 'v' ? 'Vertical measurement' : 'Horizontal measurement'">
+            <svg v-if="row.dir === 'v'" viewBox="0 0 14 20" fill="none" stroke="currentColor" stroke-width="1.5" width="10" height="14">
+              <line x1="7" y1="2" x2="7" y2="18"/>
+              <path d="M4 5l3-3 3 3"/>
+              <path d="M4 15l3 3 3-3"/>
+            </svg>
+            <svg v-else viewBox="0 0 20 14" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="10">
+              <line x1="2" y1="7" x2="18" y2="7"/>
+              <path d="M5 4l-3 3 3 3"/>
+              <path d="M15 4l3 3-3 3"/>
+            </svg>
           </div>
-        </template>
+          <dt class="sg-label">{{ row.label }}</dt>
+          <dd class="sg-value">{{ row.value }}</dd>
+        </div>
       </dl>
     </div>
 
-    <!-- Footer note -->
     <div class="sg-footer">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" width="11" height="11" aria-hidden="true">
         <circle cx="8" cy="8" r="6.5"/>
         <path d="M8 5.5v3M8 10.5h.01"/>
       </svg>
-      <p>All measurements refer to this piece specifically. Please check before ordering.</p>
+      <p>
+        All measurements refer to this piece specifically. Please check before ordering.
+        <template v-if="usesCentimetres"> Values shown in centimetres (cm).</template>
+      </p>
     </div>
   </div>
 </template>
@@ -102,16 +195,19 @@ const sizeConfig: {
   border-radius: var(--radius-md);
   overflow: hidden;
   background: rgba(22, 14, 11, 0.5);
+  max-width: 100%;
+  min-width: 0;
 }
 
-/* ── Header ────────────────────────── */
 .sg-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 11px 16px;
   background: rgba(201, 168, 76, 0.07);
   border-bottom: 1px solid rgba(201, 168, 76, 0.16);
+  min-width: 0;
 }
 
 .sg-tape { color: var(--gold); flex-shrink: 0; }
@@ -123,8 +219,10 @@ const sizeConfig: {
   text-transform: uppercase;
   color: var(--gold);
   font-weight: 500;
-  flex: 1;
+  flex: 1 1 8rem;
   margin: 0;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .sg-badge {
@@ -138,15 +236,32 @@ const sizeConfig: {
   border-radius: 99px;
   border: 1px solid rgba(139, 115, 85, 0.15);
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ── Body ──────────────────────────── */
+.sg-badge--type {
+  color: rgba(201, 168, 76, 0.85);
+  border-color: rgba(201, 168, 76, 0.28);
+  background: rgba(201, 168, 76, 0.08);
+}
+
 .sg-body {
   padding: 14px 16px;
   max-height: 210px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(201, 168, 76, 0.2) transparent;
+}
+
+.sg-empty {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 300;
+  letter-spacing: 0.04em;
 }
 
 .sg-list {
@@ -157,12 +272,13 @@ const sizeConfig: {
 
 .sg-entry {
   display: grid;
-  grid-template-columns: 18px 1fr auto;
+  grid-template-columns: 18px minmax(0, 1fr) minmax(0, auto);
   align-items: center;
   gap: 7px;
   padding: 6px 8px;
   border-radius: var(--radius-sm);
   transition: background 0.18s;
+  min-width: 0;
 }
 .sg-entry:hover { background: rgba(201, 168, 76, 0.05); }
 
@@ -182,6 +298,9 @@ const sizeConfig: {
   color: var(--muted);
   font-weight: 300;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sg-value {
@@ -192,9 +311,11 @@ const sizeConfig: {
   letter-spacing: 0.04em;
   text-align: right;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ── Footer note ───────────────────── */
 .sg-footer {
   display: flex;
   align-items: flex-start;
@@ -213,5 +334,21 @@ const sizeConfig: {
   color: rgba(139, 115, 85, 0.65);
   letter-spacing: 0.03em;
   font-weight: 300;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 520px) {
+  .sg-list {
+    grid-template-columns: 1fr;
+  }
+
+  .sg-label,
+  .sg-value {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    text-align: left;
+  }
 }
 </style>

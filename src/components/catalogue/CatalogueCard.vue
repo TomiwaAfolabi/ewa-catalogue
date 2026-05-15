@@ -23,6 +23,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Product } from '@/types'
+import { countMeasurementFields, normalizeGarmentSizes, resolveGarmentType } from '@/utils/measurements'
+import { productStockQuantity } from '@/utils/inventory'
 
 type HighlightIcon = 'fabric' | 'ruler' | 'hanger' | 'tag' | 'layers'
 
@@ -37,18 +39,21 @@ function formatPrice(price: number, symbol: string) {
 function getHighlights(p: Product) {
   const t = p.title.toLowerCase()
   const isLinen = t.includes('linen')
-  const sizeCount = Object.keys(p.sizes ?? {}).filter(k => (p.sizes as Record<string, string>)[k]).length
+  const sizes = normalizeGarmentSizes(p.sizes)
+  const sizeCount = countMeasurementFields(sizes)
 
   const materialMain = isLinen ? 'Premium linen' : 'Natural fabric'
   const materialSub = isLinen ? 'Breathable weave for warm days' : 'Lightweight, easy drape'
 
   const measureMain =
-    sizeCount > 1 ? `${sizeCount} measurements in the guide` : 'Size measurements listed'
+    sizeCount > 1 ? `${sizeCount} measurements in the guide` : sizeCount === 1 ? '1 measurement in the guide' : 'Size guide on the detail page'
   const measureSub = 'Full chart on the detail page'
 
   let garmentIcon: HighlightIcon = 'tag'
   let garmentMain = 'Wardrobe piece'
   let garmentSub = 'Pairs with the rest of the collection'
+
+  const apiGarment = resolveGarmentType(sizes, p.garmentType ?? null)
 
   const coord =
     t.includes('shirt & trouser') ||
@@ -59,6 +64,13 @@ function getHighlights(p: Product) {
     garmentIcon = 'hanger'
     garmentMain = 'Shirt and trouser set'
     garmentSub = 'Coordinated full look'
+  } else if (apiGarment === 'SHIRT') {
+    garmentIcon = 'layers'
+    garmentMain = 'Shirt'
+    garmentSub = 'Chest, sleeve & shirt length (cm) in the guide'
+  } else if (apiGarment === 'TROUSER') {
+    garmentMain = 'Trouser'
+    garmentSub = 'Waist & length (cm) in the guide'
   } else if (t.includes('trouser') || t.includes('cargo') || t.includes('short')) {
     if (t.includes('cargo')) {
       garmentMain = 'Cargo trouser'
@@ -83,11 +95,13 @@ function getHighlights(p: Product) {
   ]
 }
 
+const stockQty = computed(() => productStockQuantity(props.product))
+
 const cardAriaLabel = computed(() => {
   const price = formatPrice(props.product.price, props.product.currency_symbol)
   const parts = [`${props.product.title} — ${price}.`]
   if (props.product.featured) parts.push('Featured piece.')
-  if (props.product.inStock === false) parts.push('Currently unavailable.')
+  parts.push(stockQty.value === 0 ? 'Out of stock.' : `${stockQty.value} in stock.`)
   parts.push('Press Enter or Space to view details.')
   return parts.join(' ')
 })
@@ -156,15 +170,15 @@ const cardAriaLabel = computed(() => {
       </div>
 
       <p
-        v-if="product.inStock === false"
-        class="stock-note"
+        class="stock-line"
+        :class="{ 'stock-line--out': stockQty === 0 }"
         role="status"
       >
-        <svg class="stock-note__icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
-          <circle cx="7" cy="7" r="6"/>
-          <path d="M7 4v4M7 10h.01"/>
+        <svg class="stock-line__icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+          <rect x="2" y="4" width="10" height="7" rx="1"/>
+          <path d="M4.5 4V3a2.5 2.5 0 015 0v1"/>
         </svg>
-        Currently unavailable to order
+        {{ stockQty === 0 ? 'Out of stock' : `In stock: ${stockQty}` }}
       </p>
 
       <!-- Divider -->
@@ -491,19 +505,24 @@ const cardAriaLabel = computed(() => {
   flex-shrink: 0;
 }
 
-.stock-note {
+.stock-line {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: -6px 0 12px;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.04em;
-  color: rgba(237, 200, 160, 0.92);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(139, 211, 160, 0.88);
 }
 
-.stock-note__icon {
+.stock-line--out {
+  color: rgba(255, 170, 150, 0.92);
+}
+
+.stock-line__icon {
   flex-shrink: 0;
   width: 14px;
   height: 14px;

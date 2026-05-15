@@ -1,84 +1,243 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// EWA Catalogue — HTTP Client (api.ts)
-//
-// This is the single integration point for your future backend.
-// When your backend is ready:
-//   1. Set VITE_API_BASE_URL in your .env file
-//   2. The `useMockData` flag below will switch automatically
-//   3. No component or store code changes needed
+// EWA Catalogue — HTTP client for the NestJS API (`server/`)
+// Set VITE_API_BASE_URL (e.g. http://localhost:3000/api) and VITE_SITE_URL (https://www.ewaman.com)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { ApiResponse, PaginatedResponse, Product } from '@/types'
+import type {
+  ApiResponse,
+  AuthTokens,
+  AuthUser,
+  CreatedOrder,
+  OrdersListResponse,
+  PaginatedResponse,
+  PaystackInitializeResponse,
+  Product,
+} from '@/types'
 
-// Switch this to false (or use env var) when backend is ready
-const useMockData = import.meta.env.VITE_USE_MOCK_DATA !== 'false'
+const BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ||
+  'http://localhost:3000/api'
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
-const API_TIMEOUT = 10_000
+const API_TIMEOUT = 15_000
 
-// ── Core fetch wrapper ────────────────────────────────────────────────────────
+type RequestOpts = { skipAuth?: boolean }
+
+function nestMessage(body: Record<string, unknown>): string {
+  const m = body?.message
+  if (Array.isArray(m)) {
+    return m
+      .map((x) => (typeof x === 'string' ? x : x != null ? String(x) : ''))
+      .filter(Boolean)
+      .join(' ')
+  }
+  if (typeof m === 'string' && m.trim()) return m
+  const err = body?.error
+  if (typeof err === 'string' && err.trim()) return err
+  const code = body?.statusCode
+  if (typeof code === 'number') {
+    return code === 401
+      ? 'You need to sign in again.'
+      : code === 403
+        ? 'You do not have permission to do that.'
+        : code === 404
+          ? 'That resource was not found.'
+          : code === 409
+            ? 'That action conflicts with the current state (for example, the email may already be in use).'
+            : code >= 500
+              ? 'Something went wrong on the server. Please try again shortly.'
+              : `Request failed (${code}).`
+  }
+  return 'Something went wrong. Please try again.'
+}
 
 async function request<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  opts?: RequestOpts,
 ): Promise<ApiResponse<T>> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT)
 
+  const token = opts?.skipAuth ? null : localStorage.getItem('ewa_access_token')
+  const baseHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+  const extra = (options.headers ?? {}) as Record<string, string>
+  const headers = { ...baseHeaders, ...extra }
+
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        // Auth header will be injected here once backend is ready:
-        // ...(getAuthToken() && { Authorization: `Bearer ${getAuthToken()}` }),
-        ...options.headers,
-      },
-      signal: controller.signal,
       ...options,
+      headers,
+      signal: controller.signal,
     })
 
     clearTimeout(timeoutId)
 
+    const body = await response.json().catch(() => ({}))
+
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error?.message || `HTTP ${response.status}`)
+      throw new Error(nestMessage(body as Record<string, unknown>))
     }
 
-    const data = await response.json()
-    return { data, success: true }
-  } catch (err: any) {
+    return { data: body as T, success: true }
+  } catch (err: unknown) {
     clearTimeout(timeoutId)
-    if (err.name === 'AbortError') {
+    if (err instanceof Error && err.name === 'AbortError') {
       throw new Error('Request timed out. Please check your connection.')
     }
     throw err
   }
 }
 
-// ── API methods — these are the real backend endpoints ───────────────────────
+function qs(params: Record<string, string | number | boolean | undefined>) {
+  const u = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined) continue
+    u.set(k, String(v))
+  }
+  const s = u.toString()
+  return s ? `?${s}` : ''
+}
 
 const api = {
-  products: {
-    getAll: (params?: { page?: number; perPage?: number; category?: string }) =>
-      request<PaginatedResponse<Product>>('/products', {
-        method: 'GET',
+  auth: {
+    register: (payload: {
+      email: string
+      password: string
+      firstName?: string
+      lastName?: string
+    }) =>
+      request<AuthTokens>('/v1/auth/register', { method: 'POST', body: JSON.stringify(payload) }, {
+        skipAuth: true,
       }),
 
-    getById: (id: string) =>
-      request<Product>(`/products/${id}`),
+    login: (payload: { email: string; password: string }) =>
+      request<AuthTokens>('/v1/auth/login', { method: 'POST', body: JSON.stringify(payload) }, {
+        skipAuth: true,
+      }),
 
-    search: (query: string) =>
-      request<Product[]>(`/products/search?q=${encodeURIComponent(query)}`),
+    logout: (refreshToken: string) =>
+      request<{ success: boolean }>(
+        '/v1/auth/logout',
+        { method: 'POST', body: JSON.stringify({ refreshToken }) },
+      ),
 
-    getFeatured: () =>
-      request<Product[]>('/products/featured'),
+    me: () => request<AuthUser>('/v1/auth/me'),
+
+    requestPasswordReset: (payload: { email: string }) =>
+      request<{ ok: boolean; message: string }>(
+        '/v1/auth/password-reset/request',
+        { method: 'POST', body: JSON.stringify(payload) },
+        { skipAuth: true },
+      ),
+
+    confirmPasswordReset: (payload: { email: string; code: string; password: string }) =>
+      request<{ ok: boolean; message: string }>(
+        '/v1/auth/password-reset/confirm',
+        { method: 'POST', body: JSON.stringify(payload) },
+        { skipAuth: true },
+      ),
+  },
+
+  products: {
+    list: (params?: {
+      page?: number
+      perPage?: number
+      categorySlug?: string
+      featured?: boolean
+      search?: string
+    }) =>
+      request<PaginatedResponse<Product>>(
+        `/v1/catalogue/products${qs({
+          page: params?.page,
+          perPage: params?.perPage,
+          categorySlug: params?.categorySlug,
+          featured: params?.featured,
+          search: params?.search,
+        })}`,
+      ),
+
+    getByUuid: (id: string) => request<Product>(`/v1/catalogue/products/id/${id}`),
+
+    getByCatalogueKey: (key: string) =>
+      request<Product>(`/v1/catalogue/products/key/${encodeURIComponent(key)}`),
+
+    getBySlug: (slug: string) =>
+      request<Product>(`/v1/catalogue/products/slug/${encodeURIComponent(slug)}`),
+
+    search: (q: string, limit?: number) =>
+      request<Product[]>(`/v1/catalogue/products/search${qs({ q, limit })}`),
+
+    featured: (limit?: number) =>
+      request<Product[]>(`/v1/catalogue/products/featured${qs({ limit })}`),
   },
 
   orders: {
-    create: (payload: { items: { productId: string; quantity: number }[]; contact: string }) =>
-      request('/orders', { method: 'POST', body: JSON.stringify(payload) }),
+    list: (params?: { page?: number; perPage?: number }) =>
+      request<OrdersListResponse>(
+        `/v1/orders${qs({
+          page: params?.page,
+          perPage: params?.perPage,
+        })}`,
+      ),
+
+    create: (payload: {
+      items: {
+        productId: string
+        quantity: number
+        expectedUnitPriceKobo: number
+        selectedSize?: string
+      }[]
+      shippingSnapshot?: Record<string, unknown>
+      notes?: string
+      shippingAmount?: number
+      taxAmount?: number
+      guestCheckoutEmail?: string
+    }) =>
+      request<CreatedOrder>('/v1/orders', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+
+    getOne: (orderId: string) => request<CreatedOrder & { items?: unknown[] }>(`/v1/orders/${orderId}`),
+  },
+
+  payments: {
+    initializePaystack: (
+      payload: { orderId: string; callbackUrl?: string; expectedOrderTotalKobo?: number },
+      idempotencyKey: string,
+    ) => {
+      const body: { orderId: string; callbackUrl?: string; expectedOrderTotalKobo?: number } = {
+        orderId: payload.orderId,
+      }
+      if (payload.callbackUrl != null && payload.callbackUrl !== '') {
+        body.callbackUrl = payload.callbackUrl
+      }
+      if (
+        payload.expectedOrderTotalKobo != null &&
+        Number.isFinite(payload.expectedOrderTotalKobo)
+      ) {
+        body.expectedOrderTotalKobo = Math.round(payload.expectedOrderTotalKobo)
+      }
+      return request<PaystackInitializeResponse>('/v1/payments/paystack/initialize', {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      })
+    },
+
+    verifyPaystack: (reference: string) =>
+      request<{
+        ok: boolean
+        message?: string
+        paymentId?: string
+        order?: { id: string; status: string; total: number }
+        payment?: { status: string; paystackReference: string | null }
+      }>(`/v1/payments/paystack/verify/${encodeURIComponent(reference)}`),
   },
 }
 
 export default api
-export { useMockData }
+export { BASE_URL }

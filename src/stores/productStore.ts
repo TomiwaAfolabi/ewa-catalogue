@@ -34,7 +34,7 @@ export const useProductStore = defineStore('products', () => {
     error.value = null
     try {
       const res = await productService.getAll()
-      products.value =res.data
+      products.value = res.data
     } catch (err: any) {
       error.value = err.message || 'Failed to load products.'
     } finally {

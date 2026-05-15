@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore } from '@/stores/productStore'
 import type { Product } from '@/types'
+import EwaPageSpinner from '@/components/ui/EwaPageSpinner.vue'
 
 const router = useRouter()
 const productStore = useProductStore()
@@ -35,8 +36,22 @@ const spotlightProducts = computed((): Product[] => {
   return [...featured, ...rest].slice(0, 8)
 })
 
+/** Layout for the featured strip — avoids empty space when fewer than 4 pieces. */
+const spotlightLayout = computed(() => {
+  const count = spotlightProducts.value.length
+  const cols = Math.min(Math.max(count, 1), 4)
+  return {
+    count,
+    cols,
+    needsScroll: count > 4,
+  }
+})
+
 function openProduct(p: Product) {
-  router.push({ name: 'catalogue-detail', params: { id: p.id } })
+  router.push({
+    name: 'catalogue-detail',
+    params: { id: (p.catalogueKey ?? p.id).toString() },
+  })
 }
 
 function scrollStrip(direction: -1 | 1) {
@@ -86,8 +101,8 @@ onBeforeUnmount(() => {
       </h1>
       <p class="hero-sub">African beauty, reimagined</p>
       <p class="hero-body">
-        <strong>Ewa</strong> is not just clothing — it is a celebration.
-        Of the craftsmen who came before us, and the men we are becoming.
+        <strong>Ewa</strong> is not just clothing, it is a celebration.
+        of the craftsmen who came before us, and the men we are becoming.
         Every thread carries a story.
       </p>
       <div class="hero-ctas">
@@ -159,7 +174,7 @@ onBeforeUnmount(() => {
           <div class="cta-slider-inner">
             <div class="cta-strip-toolbar">
              
-              <div class="cta-scroll-btns">
+              <div v-if="spotlightLayout.needsScroll" class="cta-scroll-btns">
                 <button
                   type="button"
                   class="cta-icon-btn"
@@ -187,6 +202,11 @@ onBeforeUnmount(() => {
             <div
               ref="scrollStripEl"
               class="cta-scroll"
+              :class="{
+                'cta-scroll--fitted': !spotlightLayout.needsScroll,
+                [`cta-scroll--count-${spotlightLayout.count}`]: !spotlightLayout.needsScroll,
+              }"
+              :style="{ '--cta-cols': spotlightLayout.cols }"
               role="region"
               aria-label="Collection highlights"
               aria-describedby="cta-scroll-desc"
@@ -234,7 +254,7 @@ onBeforeUnmount(() => {
           aria-live="polite"
           aria-busy="true"
         >
-          <span class="sr-only">Loading collection highlights</span>
+      
           <div class="cta-slider-inner cta-slider-inner--flush">
             <div class="cta-scroll cta-scroll--skeleton">
               <div v-for="i in 8" :key="i" class="cta-scroll-sk" aria-hidden="true">
@@ -378,15 +398,14 @@ onBeforeUnmount(() => {
 .hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  height:680px;
+  height:530px;
  
 }
 
 .hero-left {
-  padding: 40px 32px;
+  padding: 30px 40px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   position: relative;
   background: rgba(28, 19, 16, 0.72);
 }
@@ -414,11 +433,11 @@ onBeforeUnmount(() => {
 
 .hero-headline {
   font-family: var(--font-serif);
-  font-size: clamp(48px, 5.5vw, 80px);
+  font-size: clamp(20px, 3.2vw, 80px);
   font-weight: 300;
   line-height: 1.0;
   color: var(--ivory);
-  margin-bottom: 16px;
+ 
 }
 .hero-headline em { font-style: italic; color: var(--terra); }
 
@@ -805,9 +824,10 @@ onBeforeUnmount(() => {
 
 .cta-scroll {
   --cta-gap: 12px;
+  --cta-cols: 4;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: calc((100% - 3 * var(--cta-gap)) / 4);
+  grid-auto-columns: calc((100% - (var(--cta-cols) - 1) * var(--cta-gap)) / var(--cta-cols));
   gap: var(--cta-gap);
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -815,6 +835,26 @@ onBeforeUnmount(() => {
   scroll-padding-inline: clamp(16px, 5vw, 56px);
   padding: 12px;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Fewer than 5 pieces: fill the row evenly (no empty fourth column). */
+.cta-scroll--fitted {
+  grid-auto-flow: unset;
+  grid-auto-columns: unset;
+  grid-template-columns: repeat(var(--cta-cols), minmax(0, 1fr));
+  overflow-x: visible;
+  scroll-snap-type: none;
+  justify-content: center;
+}
+
+.cta-scroll--fitted.cta-scroll--count-1 {
+  grid-template-columns: minmax(0, min(320px, 100%));
+}
+
+.cta-scroll--fitted .cta-scroll-card {
+  max-width: 360px;
+  width: 100%;
+  margin-inline: auto;
 }
 
 .cta-scroll:focus-visible {
@@ -947,6 +987,12 @@ onBeforeUnmount(() => {
   padding: 12px 0 18px;
 }
 
+.home-loader-strip {
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px 4px;
+}
+
 .cta-scroll--skeleton {
   grid-auto-columns: calc((100% - 3 * var(--cta-gap)) / 4);
 }
@@ -1020,8 +1066,11 @@ onBeforeUnmount(() => {
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .pillars-grid { grid-template-columns: 1fr; }
-  .cta-scroll,
+  .cta-scroll:not(.cta-scroll--fitted) {
+    --cta-cols: 2;
+  }
   .cta-scroll--skeleton {
+    --cta-cols: 2;
     grid-auto-columns: calc((100% - var(--cta-gap)) / 2);
   }
 }
@@ -1053,14 +1102,20 @@ onBeforeUnmount(() => {
     align-items: stretch;
   }
   .cta-scroll-btns {
-    justify-content: flex-end;
+    justify-content: center;
   }
 }
 
 @media (max-width: 520px) {
-  .cta-scroll,
+  .cta-scroll:not(.cta-scroll--fitted) {
+    grid-auto-columns: minmax(140px, 82%);
+  }
   .cta-scroll--skeleton {
     grid-auto-columns: minmax(140px, 82%);
+  }
+  .cta-scroll--fitted.cta-scroll--count-2,
+  .cta-scroll--fitted.cta-scroll--count-3 {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>
