@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onUnmounted, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useProductStore } from '@/stores/productStore'
+import { useProductRouteView } from '@/composables/useProductRouteView'
 import { useCartStore } from '@/stores/cartStore'
 import { useWhatsApp } from '@/composables/useWhatsApp'
 import { useToast } from '@/composables/useToast'
@@ -16,6 +18,7 @@ import EwaPageSpinner from '@/components/ui/EwaPageSpinner.vue'
 const route  = useRoute()
 const router = useRouter()
 const productStore = useProductStore()
+const { currentProduct } = storeToRefs(productStore)
 const cartStore    = useCartStore()
 const { enquireAboutProduct } = useWhatsApp()
 const toast = useToast()
@@ -54,9 +57,7 @@ watch(
   },
 )
 
-onMounted(async () => {
-  await productStore.fetchProductById(route.params.id as string)
-})
+useProductRouteView(route, currentProduct, (id) => productStore.fetchProductById(id))
 
 onUnmounted(() => {
   productStore.clearCurrentProduct()

@@ -82,6 +82,21 @@ export interface AuthTokens {
   expiresIn: string
 }
 
+/** Body for `POST /v1/activity/route-view` (product page analytics). */
+export interface RouteViewPayload {
+  route: string
+  catalogueKey?: string
+  slug?: string
+  productId?: string
+}
+
+/** In-store engagement prompt from `GET /v1/engagement/prompt`. */
+export interface EngagementPrompt {
+  id: string
+  message: string
+  createdAt: string
+}
+
 export interface AuthUser {
   id: string
   email: string

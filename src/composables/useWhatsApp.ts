@@ -23,5 +23,17 @@ export function useWhatsApp() {
     )
   }
 
-  return { enquireAboutProduct }
+  function openStoreRequest(customMessage?: string) {
+    const text =
+      customMessage?.trim() ||
+      `Hello — I'd like to make a request while browsing ${SITE_NAME}.`
+    const message = encodeURIComponent(text)
+    window.open(
+      `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${message}`,
+      '_blank',
+      'noopener,noreferrer',
+    )
+  }
+
+  return { enquireAboutProduct, openStoreRequest }
 }

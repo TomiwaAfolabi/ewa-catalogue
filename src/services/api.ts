@@ -10,8 +10,10 @@ import type {
   CreatedOrder,
   OrdersListResponse,
   PaginatedResponse,
+  EngagementPrompt,
   PaystackInitializeResponse,
   Product,
+  RouteViewPayload,
 } from '@/types'
 
 const BASE_URL =
@@ -236,6 +238,24 @@ const api = {
         order?: { id: string; status: string; total: number }
         payment?: { status: string; paystackReference: string | null }
       }>(`/v1/payments/paystack/verify/${encodeURIComponent(reference)}`),
+  },
+
+  engagement: {
+    getPrompt: () => request<EngagementPrompt | null>('/v1/engagement/prompt'),
+
+    dismissPrompt: (promptId: string) =>
+      request<{ ok: boolean }>('/v1/engagement/prompt/dismiss', {
+        method: 'POST',
+        body: JSON.stringify({ promptId }),
+      }),
+  },
+
+  activity: {
+    reportRouteView: (payload: RouteViewPayload) =>
+      request<{ ok?: boolean }>('/v1/activity/route-view', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
   },
 }
 

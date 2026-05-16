@@ -2,12 +2,14 @@
 import AppNavBar from '@/components/layout/AppNavBar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import CartDrawer from '@/components/layout/CartDrawer.vue'
+import EngagementPromptHost from '@/components/engagement/EngagementPromptHost.vue'
 </script>
 
 <template>
   <div class="site-wrapper">
     <AppNavBar />
     <CartDrawer />
+    <EngagementPromptHost />
     <main class="site-main">
       <slot />
     </main>
