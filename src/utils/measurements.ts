@@ -12,14 +12,54 @@ export function isMeasurementPresent(value: unknown): boolean {
   return false
 }
 
+const CM_PER_INCH = 2.54
+
+/** Parse a garment measurement to centimetres when possible. */
+export function parseMeasurementCm(value: unknown): number | null {
+  if (!isMeasurementPresent(value)) return null
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  const s = String(value).trim()
+  const cleaned = s.replace(/\s*cm\s*$/i, '').trim()
+  const n = Number(cleaned)
+  if (!Number.isFinite(n) || cleaned === '') return null
+  if (/[a-z]/i.test(cleaned) && !/^-?\d/.test(cleaned)) return null
+  return n
+}
+
+function formatLengthUnit(cm: number, unit: 'cm' | 'in'): string {
+  const value = unit === 'in' ? cm / CM_PER_INCH : cm
+  const rounded = Math.round(value * 10) / 10
+  const num = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+  return `${num} ${unit}`
+}
+
 /** Display value with cm suffix for numeric garment fields. */
 export function formatCm(value: number | string | undefined | null): string | null {
   if (!isMeasurementPresent(value)) return null
-  if (typeof value === 'number' && Number.isFinite(value)) return `${value} cm`
+  const cm = parseMeasurementCm(value)
+  if (cm !== null) {
+    if (cm === 0) return '-'
+    return formatLengthUnit(cm, 'cm')
+  }
   const s = String(value).trim()
-  const n = Number(s)
-  if (Number.isFinite(n) && s !== '' && !/[a-z]/i.test(s)) return `${n} cm`
-  return s
+  return s || null
+}
+
+/**
+ * Size guide display: centimetres and inches, or "-" when the value is zero.
+ * Non-numeric legacy strings are returned unchanged.
+ */
+export function formatMeasurementDual(
+  value: number | string | undefined | null,
+): string | null {
+  if (!isMeasurementPresent(value)) return null
+  const cm = parseMeasurementCm(value)
+  if (cm !== null) {
+    if (cm === 0) return '-'
+    return `${formatLengthUnit(cm, 'cm')} / ${formatLengthUnit(cm, 'in')}`
+  }
+  const s = String(value).trim()
+  return s || null
 }
 
 export function normalizeGarmentType(value: unknown): GarmentType | null {

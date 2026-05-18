@@ -15,7 +15,7 @@
 -->
 
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore } from '@/stores/productStore'
 import CatalogueCard from './CatalogueCard.vue'
@@ -29,9 +29,28 @@ const gridEl       = ref<HTMLElement | null>(null)
 
 const sortBy = ref<'default' | 'price-asc' | 'price-desc'>('default')
 
+let searchDebounce: ReturnType<typeof setTimeout> | undefined
+
 onMounted(() => {
-  if (!productStore.products.length) productStore.fetchProducts()
+  productStore.fetchCataloguePage(1)
 })
+
+watch(
+  () => productStore.searchQuery,
+  () => {
+    clearTimeout(searchDebounce)
+    searchDebounce = setTimeout(() => {
+      productStore.fetchCataloguePage(1, productStore.searchQuery)
+    }, 350)
+  },
+)
+
+function goToPage(next: number) {
+  if (next < 1 || next > productStore.totalPages) return
+  if (next === productStore.page) return
+  productStore.fetchCataloguePage(next, productStore.searchQuery)
+  gridEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 const sortedProducts = computed(() => {
   const base = productStore.filteredProducts
@@ -162,8 +181,11 @@ function skipToGrid() {
         aria-live="polite"
         aria-atomic="true"
       >
-        <span class="results-num">{{ sortedProducts.length }}</span>
-        {{ sortedProducts.length === 1 ? 'piece' : 'pieces' }}
+        <span class="results-num">{{ productStore.total }}</span>
+        {{ productStore.total === 1 ? 'piece' : 'pieces' }}
+        <span v-if="productStore.totalPages > 1" class="results-page">
+          · page {{ productStore.page }} of {{ productStore.totalPages }}
+        </span>
       </p>
     </div>
 
@@ -211,7 +233,7 @@ function skipToGrid() {
       </svg>
       <p class="state-title">Couldn't load the collection</p>
       <p class="state-body">{{ productStore.error }}</p>
-      <button class="state-btn" @click="productStore.fetchProducts()">
+      <button class="state-btn" @click="productStore.fetchCataloguePage(productStore.page)">
         <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14" aria-hidden="true">
           <path d="M3.5 9a5.5 5.5 0 1 1 .8 2.8"/>
           <path d="M3.5 12.5v-4h4"/>
@@ -270,7 +292,7 @@ function skipToGrid() {
         role="list"
         tabindex="-1"
         aria-describedby="grid-panel-desc"
-        :aria-label="`${sortedProducts.length} product${sortedProducts.length === 1 ? '' : 's'} in the collection`"
+        :aria-label="`${sortedProducts.length} product${sortedProducts.length === 1 ? '' : 's'} on this page`"
       >
         <div
           v-for="(product, i) in sortedProducts"
@@ -282,6 +304,47 @@ function skipToGrid() {
           <CatalogueCard :product="product" @click="openProduct" />
         </div>
       </div>
+
+      <nav
+        v-if="productStore.totalPages > 1"
+        class="catalogue-pagination"
+        aria-label="Catalogue pages"
+      >
+        <button
+          type="button"
+          class="page-btn"
+          :disabled="productStore.page <= 1 || productStore.loading"
+          @click="goToPage(productStore.page - 1)"
+        >
+          Previous
+        </button>
+        <ol class="page-list">
+          <li
+            v-for="p in productStore.totalPages"
+            :key="p"
+            class="page-list__item"
+          >
+            <button
+              type="button"
+              class="page-btn page-btn--num"
+              :class="{ 'page-btn--active': p === productStore.page }"
+              :aria-current="p === productStore.page ? 'page' : undefined"
+              :disabled="productStore.loading"
+              @click="goToPage(p)"
+            >
+              {{ p }}
+            </button>
+          </li>
+        </ol>
+        <button
+          type="button"
+          class="page-btn"
+          :disabled="productStore.page >= productStore.totalPages || productStore.loading"
+          @click="goToPage(productStore.page + 1)"
+        >
+          Next
+        </button>
+      </nav>
     </div>
 
     </div>
@@ -608,6 +671,79 @@ function skipToGrid() {
   color: var(--gold);
   margin-right: 5px;
   letter-spacing: 0;
+}
+
+.results-page {
+  letter-spacing: 0.12em;
+  text-transform: none;
+  font-size: 10px;
+  color: rgba(139, 115, 85, 0.75);
+}
+
+.catalogue-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 16px;
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(201, 168, 76, 0.12);
+}
+
+.page-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.page-list__item {
+  margin: 0;
+}
+
+.page-btn {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ivory);
+  background: rgba(250, 246, 239, 0.05);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.page-btn--num {
+  min-width: 36px;
+  padding-inline: 10px;
+}
+
+.page-btn--active {
+  border-color: var(--terra);
+  background: rgba(181, 82, 42, 0.18);
+  color: var(--terra-light);
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: rgba(201, 168, 76, 0.45);
+  background: rgba(250, 246, 239, 0.08);
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-btn:focus-visible {
+  outline: 2px solid var(--terra);
+  outline-offset: 2px;
 }
 
 /* ── Product grid ───────────────────────────────────── */

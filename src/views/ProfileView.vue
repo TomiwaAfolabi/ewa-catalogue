@@ -120,14 +120,7 @@ function clearOrderFilters() {
   dateTo.value = ''
 }
 
-/** Same mix as the homepage spotlight strip: featured first, then others. */
-const spotlightProducts = computed((): Product[] => {
-  const list = productStore.products
-  if (!list.length) return []
-  const featured = list.filter(p => p.featured)
-  const rest = list.filter(p => !p.featured)
-  return [...featured, ...rest].slice(0, 8)
-})
+const spotlightProducts = computed((): Product[] => productStore.spotlightProducts)
 
 function formatPrice(price: number, symbol: string) {
   return `${symbol}\u00a0${price.toLocaleString('en-NG')}`
@@ -158,9 +151,9 @@ const displayName = computed(() => {
 })
 
 onMounted(async () => {
-  if (!productStore.products.length) {
+  if (!productStore.spotlightProducts.length) {
     try {
-      await productStore.fetchProducts()
+      await productStore.fetchSpotlightProducts()
     } catch {
       /* non-fatal for profile */
     }
@@ -313,7 +306,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div v-if="productStore.loading && !spotlightProducts.length" class="rec-h-skel-wrap" aria-busy="true">
+      <div v-if="productStore.spotlightLoading && !spotlightProducts.length" class="rec-h-skel-wrap" aria-busy="true">
         <div class="rec-h-skel">
           <div v-for="i in 6" :key="i" class="rec-h-skel-card" />
         </div>

@@ -22,8 +22,14 @@ function mapProduct(p: Product): Product {
 }
 
 export const productService = {
-  async getAll(): Promise<PaginatedResponse<Product>> {
-    const res = await api.products.list()
+  async getAll(params?: {
+    page?: number
+    perPage?: number
+    search?: string
+    categorySlug?: string
+    featured?: boolean
+  }): Promise<PaginatedResponse<Product>> {
+    const res = await api.products.list(params)
     return {
       ...res.data,
       data: res.data.data.map(mapProduct),

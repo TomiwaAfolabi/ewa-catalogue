@@ -8,12 +8,11 @@ import { useCheckoutDelivery } from '@/composables/useCheckoutDelivery'
 import { useAddressBook, applyShippingSnapshotToDelivery } from '@/composables/useAddressBook'
 import type { SavedShippingAddress } from '@/composables/useAddressBook'
 import { useToast } from '@/composables/useToast'
-import api from '@/services/api'
-import type { CreatedOrder, Product } from '@/types'
+import { useWhatsApp } from '@/composables/useWhatsApp'
+import type { Product } from '@/types'
 import { containsHtmlDelimiters, EMAIL_MAX_LEN, isValidEmail, LIMITS } from '@/utils/formValidation'
 import { canPurchaseProduct, productStockQuantity } from '@/utils/inventory'
 import SavedAddressesModal from '@/components/checkout/SavedAddressesModal.vue'
-import { checkoutReturnUrl } from '@/config/site'
 
 function productImageSrc(p: Product): string {
   return (p.imgSrc || p.images?.[0] || '').trim()
@@ -29,15 +28,16 @@ const delivery = useCheckoutDelivery(userId, authUser)
 const { addresses: savedAddresses, addFromSnapshot, remove: removeSavedAddress } =
   useAddressBook(userId)
 const toast = useToast()
+const { openCheckoutOrder } = useWhatsApp()
 
 const notes = ref('')
 const guestCheckoutEmail = ref('')
 const error = ref('')
-const busy = ref(false)
-const createdOrder = ref<CreatedOrder | null>(null)
 const showSavedAddresses = ref(false)
 
-const callbackUrl = computed(() => checkoutReturnUrl())
+const orderCurrency = computed(
+  () => cart.items[0]?.product.currency_symbol ?? '₦',
+)
 
 watch(
   () => cart.isEmpty,
@@ -136,7 +136,7 @@ function validateNotes(): string | null {
 function validateGuestCheckout(): string | null {
   if (auth.isLoggedIn) return null
   const e = guestCheckoutEmail.value.trim()
-  if (!e) return 'Please enter your email (for Paystack and your receipt).'
+  if (!e) return null
   if (e.length > EMAIL_MAX_LEN) return 'Email address is too long.'
   if (!isValidEmail(e)) return 'Please enter a valid email address.'
   if (containsHtmlDelimiters(e)) return 'Email cannot contain the characters < or >.'
@@ -151,7 +151,7 @@ const deliveryFormComplete = computed(
     validateGuestCheckout() === null,
 )
 
-const canSubmitPayment = computed(
+const canSubmitOrder = computed(
   () => deliveryFormComplete.value && !cart.hasUnavailableItems && !cart.isEmpty,
 )
 
@@ -172,7 +172,7 @@ function applySavedAddress(addr: SavedShippingAddress) {
   error.value = ''
 }
 
-async function payWithPaystack() {
+function completeOrderOnWhatsApp() {
   error.value = ''
   const v = validateDelivery()
   if (v) {
@@ -191,37 +191,30 @@ async function payWithPaystack() {
   }
   const bad = cart.items.find((i) => !canPurchaseProduct(i.product))
   if (bad) {
-    error.value = `“${bad.product.title}” is out of stock. Remove it from your bag or refresh the collection before paying.`
+    error.value = `“${bad.product.title}” is out of stock. Remove it from your bag or refresh the collection before continuing.`
     return
   }
-  busy.value = true
-  try {
-    const base = cart.getOrderPayload({
-      notes: notes.value.trim() || undefined,
-      shippingSnapshot: delivery.snapshot() as unknown as Record<string, unknown>,
-    })
-    const payload =
-      auth.isLoggedIn
-        ? base
-        : {
-            ...base,
-            guestCheckoutEmail: guestCheckoutEmail.value.trim().toLowerCase(),
-          }
-    const orderRes = await api.orders.create(payload)
-    createdOrder.value = orderRes.data
-    sessionStorage.setItem('ewa_checkout_order_id', orderRes.data.id)
 
-    const idem = crypto.randomUUID()
-    const payRes = await api.payments.initializePaystack(
-      { orderId: orderRes.data.id, callbackUrl: callbackUrl.value },
-      idem,
-    )
-
-    window.location.href = payRes.data.authorizationUrl
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Checkout failed'
-    busy.value = false
-  }
+  const snap = delivery.snapshot()
+  const addr = snap.address
+  openCheckoutOrder({
+    items: [...cart.items],
+    totalNaira: cart.totalPrice,
+    delivery: {
+      fullName: snap.fullName.trim(),
+      phone: snap.phone.trim(),
+      line1: addr.line1.trim(),
+      line2: addr.line2?.trim() || undefined,
+      city: addr.city.trim(),
+      state: addr.state?.trim() || undefined,
+      postalCode: addr.postalCode?.trim() || undefined,
+      country: addr.country?.trim() || undefined,
+    },
+    notes: notes.value.trim() || undefined,
+    email: auth.isLoggedIn
+      ? authUser.value?.email
+      : guestCheckoutEmail.value.trim().toLowerCase() || undefined,
+  })
 }
 </script>
 
@@ -230,7 +223,7 @@ async function payWithPaystack() {
     <div class="checkout-inner">
       <h1 class="title">Checkout</h1>
       <p class="lead">
-        Review your bag, enter your delivery details, and pay securely with Paystack. You can check out as a guest or
+        Review your bag, enter your delivery details, then send your order on WhatsApp. You can check out as a guest or
         sign in to reuse saved addresses.
       </p>
 
@@ -273,8 +266,14 @@ async function payWithPaystack() {
           <strong>Delivery not included.</strong>
           The amount is for your piece(s) only, you would be required to pay for delivery fee separately depending on your location.
         </p>
+        <p class="order-total">
+          <span class="order-total__label">Total</span>
+          <span class="order-total__amount">
+            {{ orderCurrency }} {{ cart.totalPrice.toLocaleString('en-NG') }}
+          </span>
+        </p>
         <p v-if="cart.hasUnavailableItems" class="stock-alert" role="alert">
-          One or more items are out of stock. Remove them to continue to payment.
+          One or more items are out of stock. Remove them to continue.
         </p>
       </section>
 
@@ -294,12 +293,11 @@ async function payWithPaystack() {
           >
         </label>
         <label v-if="!auth.isLoggedIn" class="field">
-          <span>Email (for payment &amp; receipt)</span>
+          <span>Email (optional)</span>
           <input
             v-model="guestCheckoutEmail"
             type="email"
             autocomplete="email"
-            required
             placeholder="you@example.com"
             :maxlength="EMAIL_MAX_LEN"
           >
@@ -425,22 +423,22 @@ async function payWithPaystack() {
       <p v-if="error" class="error" role="alert">{{ error }}</p>
 
       <div class="actions">
-        <button type="button" class="btn-ghost" :disabled="busy" @click="router.push({ name: 'catalogue' })">
+        <button type="button" class="btn-ghost" @click="router.push({ name: 'catalogue' })">
           Continue shopping
         </button>
         <button
           type="button"
-          class="btn-pay"
-          :disabled="busy || cart.isEmpty || !canSubmitPayment"
-          @click="payWithPaystack"
+          class="btn-whatsapp"
+          :disabled="cart.isEmpty || !canSubmitOrder"
+          @click="completeOrderOnWhatsApp"
         >
-          {{ busy ? 'Preparing Paystack…' : 'Pay with Paystack' }}
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          Complete order on WhatsApp
         </button>
       </div>
 
-      <p v-if="createdOrder && busy" class="redirect-note">
-        Redirecting to Paystack for order {{ createdOrder.id.slice(0, 8) }}…
-      </p>
     </div>
 
     <SavedAddressesModal
@@ -772,21 +770,34 @@ async function payWithPaystack() {
   opacity: 0.5;
 }
 
-.btn-pay {
+.btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   padding: 14px 22px;
-  border: none;
+  border: 1px solid rgba(37, 211, 102, 0.35);
   border-radius: var(--radius-sm);
-  background: #0c9;
-  color: #0a1f18;
-  font-weight: 700;
-  font-size: 0.78rem;
-  letter-spacing: 0.12em;
+  background: rgba(37, 211, 102, 0.14);
+  color: #25d366;
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
 }
-.btn-pay:disabled {
+.btn-whatsapp:hover:not(:disabled) {
+  background: rgba(37, 211, 102, 0.22);
+  border-color: rgba(37, 211, 102, 0.55);
+}
+.btn-whatsapp:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+.btn-whatsapp:focus-visible {
+  outline: 2px solid #25d366;
+  outline-offset: 3px;
 }
 
 @media (max-width: 640px) {
@@ -797,16 +808,34 @@ async function payWithPaystack() {
   }
 
   .actions .btn-ghost,
-  .actions .btn-pay {
+  .actions .btn-whatsapp {
     width: 100%;
     text-align: center;
     box-sizing: border-box;
   }
 }
 
-.redirect-note {
-  margin-top: 16px;
-  font-size: 0.85rem;
-  opacity: 0.85;
+.order-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid rgba(250, 246, 239, 0.12);
+}
+
+.order-total__label {
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.order-total__amount {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--gold, #c9a84c);
 }
 </style>

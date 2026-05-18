@@ -27,14 +27,7 @@ function formatPrice(price: number, symbol: string) {
   return `${symbol}\u00a0${price.toLocaleString('en-NG')}`
 }
 
-/** Up to 8 pieces: featured first, then the rest of the catalogue. */
-const spotlightProducts = computed((): Product[] => {
-  const list = productStore.products
-  if (!list.length) return []
-  const featured = list.filter(p => p.featured)
-  const rest = list.filter(p => !p.featured)
-  return [...featured, ...rest].slice(0, 8)
-})
+const spotlightProducts = computed((): Product[] => productStore.spotlightProducts)
 
 /** Layout for the featured strip — avoids empty space when fewer than 4 pieces. */
 const spotlightLayout = computed(() => {
@@ -65,9 +58,9 @@ function scrollStrip(direction: -1 | 1) {
 }
 
 onMounted(async () => {
-  if (!productStore.products.length) {
+  if (!productStore.spotlightProducts.length) {
     try {
-      await productStore.fetchProducts()
+      await productStore.fetchSpotlightProducts()
     } catch {
       /* store handles error state */
     }
@@ -248,7 +241,7 @@ onBeforeUnmount(() => {
         </template>
 
         <div
-          v-else-if="productStore.loading"
+          v-else-if="productStore.spotlightLoading"
           class="cta-slider cta-slider--placeholder"
           role="status"
           aria-live="polite"

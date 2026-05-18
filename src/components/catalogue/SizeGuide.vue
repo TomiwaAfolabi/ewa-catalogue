@@ -16,7 +16,7 @@
 import { computed } from 'vue'
 import type { GarmentType, ProductSizes } from '@/types'
 import {
-  formatCm,
+  formatMeasurementDual,
   isMeasurementPresent,
   normalizeGarmentSizes,
   resolveGarmentType,
@@ -80,7 +80,7 @@ function rowsFromCmConfig(
   const out: DisplayRow[] = []
   for (const c of configs) {
     const raw = s[c.key]
-    const formatted = formatCm(raw as number | string | undefined | null)
+    const formatted = formatMeasurementDual(raw as number | string | undefined | null)
     if (formatted) out.push({ key: String(c.key), label: c.label, dir: c.dir, value: formatted })
   }
   return out
@@ -112,18 +112,19 @@ const displayRows = computed((): DisplayRow[] => {
       key: String(c.key),
       label: c.label,
       dir: c.dir,
-      value: typeof v === 'number' ? formatCm(v)! : String(v).trim(),
+      value:
+        formatMeasurementDual(v as number | string | undefined | null) ??
+        String(v).trim(),
     })
   }
   return legacy
 })
 
-const usesCentimetres = computed(() => {
-  for (const row of displayRows.value) {
-    if (row.value.includes(' cm')) return true
-  }
-  return false
-})
+const usesDualUnits = computed(() =>
+  displayRows.value.some(
+    (row) => row.value.includes(' cm / ') || row.value === '-',
+  ),
+)
 
 const typeBadge = computed((): string | null => {
   const t = effectiveGarmentType.value
@@ -183,7 +184,9 @@ const typeBadge = computed((): string | null => {
       </svg>
       <p>
         All measurements refer to this piece specifically. Please check before ordering.
-        <template v-if="usesCentimetres"> Values shown in centimetres (cm).</template>
+        <template v-if="usesDualUnits">
+          Values shown in centimetres (cm) and inches (in). A dash (-) is shown when a measurement is zero.
+        </template>
       </p>
     </div>
   </div>
@@ -305,15 +308,14 @@ const typeBadge = computed((): string | null => {
 
 .sg-value {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 11px;
   color: var(--ivory);
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-align: right;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.35;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .sg-footer {

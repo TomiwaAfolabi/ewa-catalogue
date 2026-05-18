@@ -14,6 +14,9 @@ export const SITE_NAME = 'ẹwà man'
 
 export const SITE_TAGLINE = 'Born of Beauty, Rooted in Heritage'
 
+/** Products shown per page on the public catalogue grid. */
+export const CATALOGUE_PAGE_SIZE = 10
+
 /** Default meta description for the shop. */
 export const SITE_DESCRIPTION =
   'EWA (ẹwà) — Yoruba for beauty. Shop the EWA collection: heritage tailoring, linen, and modern African luxury at ewaman.com.'
