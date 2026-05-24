@@ -10,13 +10,21 @@ import { inferStockQuantity } from '@/utils/inventory'
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+function resolveUnitPriceKobo(raw: Record<string, unknown>): number | undefined {
+  const v = raw.unitPriceKobo ?? raw.unit_price_kobo ?? raw.priceKobo ?? raw.price_kobo
+  if (typeof v === 'number' && Number.isFinite(v)) return Math.round(v)
+  return undefined
+}
+
 function mapProduct(p: Product): Product {
   const raw = p as unknown as Record<string, unknown>
   const topGt = normalizeGarmentType(raw.garmentType ?? raw.garment_type)
+  const unitPriceKobo = resolveUnitPriceKobo(raw)
   return {
     ...p,
     sizes: normalizeGarmentSizes(extractProductSizesInput(p)),
     stockQuantity: inferStockQuantity(p),
+    ...(unitPriceKobo != null ? { unitPriceKobo } : {}),
     ...(topGt ? { garmentType: topGt } : {}),
   }
 }

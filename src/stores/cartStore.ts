@@ -6,14 +6,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CartItem, Product } from '@/types'
 import { canPurchaseProduct, productStockQuantity } from '@/utils/inventory'
-
-/** Smallest currency unit for API alignment (fallback for legacy/static data). */
-function unitPriceKobo(p: Product): number {
-  if (typeof p.priceKobo === 'number' && Number.isFinite(p.priceKobo)) {
-    return p.priceKobo
-  }
-  return Math.round(p.price * 100)
-}
+import { productLineTotalNaira, productUnitPriceKobo } from '@/utils/pricing'
 
 export const useCartStore = defineStore('cart', () => {
   const items = ref<CartItem[]>([])
@@ -26,7 +19,7 @@ export const useCartStore = defineStore('cart', () => {
   /** Whole naira (rounded) for display only. */
   const totalPrice = computed(() =>
     items.value.reduce(
-      (sum, item) => sum + Math.round((unitPriceKobo(item.product) * item.quantity) / 100),
+      (sum, item) => sum + productLineTotalNaira(item.product, item.quantity),
       0,
     )
   )
@@ -91,7 +84,7 @@ export const useCartStore = defineStore('cart', () => {
       items: items.value.map(i => ({
         productId: i.product.id,
         quantity: i.quantity,
-        expectedUnitPriceKobo: unitPriceKobo(i.product),
+        expectedUnitPriceKobo: productUnitPriceKobo(i.product),
         ...(i.selectedSize ? { selectedSize: i.selectedSize } : {}),
       })),
       ...extra,

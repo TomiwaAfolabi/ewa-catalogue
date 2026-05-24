@@ -21,7 +21,6 @@ function checkout() {
     return
   }
   cart.closeCart()
-  toast.info('Continue to Paystack checkout on the next page.')
   void router.push({ name: 'checkout' })
 }
 </script>
@@ -117,8 +116,8 @@ function checkout() {
               <p v-if="cartBlocked" class="drawer-stock-alert" role="alert">
                 Remove out-of-stock items to continue to checkout.
               </p>
-              <button type="button" class="btn-checkout" @click="checkout">
-                Checkout with Paystack
+              <button type="button" class="btn-checkout" :disabled="cartBlocked" @click="checkout">
+                Checkout
               </button>
             </footer>
           </template>

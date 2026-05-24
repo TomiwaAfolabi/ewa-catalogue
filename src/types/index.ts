@@ -34,8 +34,11 @@ export interface Product {
   title: string
   imgSrc: string
   images: string[]
+  /** Whole naira for display (from API). */
   price: number
-  /** From API — authoritative; required for checkout price checks. */
+  /** Authoritative unit price in kobo from the API; required for checkout price checks. */
+  unitPriceKobo?: number
+  /** Legacy API alias — mapped to `unitPriceKobo` in the product service when present. */
   priceKobo?: number
   currency_symbol: string
   sizes: ProductSizes

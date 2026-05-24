@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────
 import { SITE_NAME, getSiteOrigin } from '@/config/site'
 import type { CartItem } from '@/types'
+import { productLineTotalNaira } from '@/utils/pricing'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '23058533374'
 
@@ -38,7 +39,7 @@ function openWhatsAppWithText(text: string) {
 
 function formatCheckoutLine(item: CartItem, index: number): string {
   const sym = item.product.currency_symbol || '₦'
-  const lineTotal = item.product.price * item.quantity
+  const lineTotal = productLineTotalNaira(item.product, item.quantity)
   const size = item.selectedSize ? ` · Size ${item.selectedSize}` : ''
   return `${index + 1}. ${item.product.title}${size} × ${item.quantity} — ${sym} ${lineTotal.toLocaleString('en-NG')}`
 }
