@@ -46,7 +46,7 @@ function getHighlights(p: Product) {
   const materialSub = isLinen ? 'Breathable weave for warm days' : 'Lightweight, easy drape'
 
   const measureMain =
-    sizeCount > 1 ? `${sizeCount} measurements in the guide` : sizeCount === 1 ? '1 measurement in the guide' : 'Size guide on the detail page'
+    sizeCount > 1 ? `Measurements in the guide` : sizeCount === 1 ? '1 measurement in the guide' : 'Size guide on the detail page'
   const measureSub = 'Full chart on the detail page'
 
   let garmentIcon: HighlightIcon = 'tag'
@@ -71,6 +71,9 @@ function getHighlights(p: Product) {
   } else if (apiGarment === 'TROUSER') {
     garmentMain = 'Trouser'
     garmentSub = 'Waist & length (cm) in the guide'
+  } else if (apiGarment === 'SHORTS') {
+    garmentMain = 'Shorts'
+    garmentSub = 'Waist & shorts length (cm) in the guide'
   } else if (t.includes('trouser') || t.includes('cargo') || t.includes('short')) {
     if (t.includes('cargo')) {
       garmentMain = 'Cargo trouser'

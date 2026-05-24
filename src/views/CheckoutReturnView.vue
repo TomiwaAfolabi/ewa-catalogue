@@ -3,13 +3,17 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import { useCartStore } from '@/stores/cartStore'
+import { useToast } from '@/composables/useToast'
+import { clearCheckoutIdempotencyKeys } from '@/utils/checkoutIdempotency'
 
 const route = useRoute()
 const router = useRouter()
 const cart = useCartStore()
+const toast = useToast()
 
 const message = ref('Verifying payment…')
 const ok = ref(false)
+const verifying = ref(true)
 
 onMounted(async () => {
   const refParam =
@@ -18,24 +22,33 @@ onMounted(async () => {
     ''
 
   if (!refParam) {
+    verifying.value = false
     message.value = 'Missing payment reference. If you completed payment, check your email or orders.'
+    toast.error('No payment reference found in the return link.')
     return
   }
 
+  toast.info('Verifying your Paystack payment…')
   try {
     const res = await api.payments.verifyPaystack(refParam)
+    verifying.value = false
     if (res.data.order?.status === 'PAID') {
       ok.value = true
       message.value = 'Payment successful. Thank you for your order.'
       cart.clearCart()
-      sessionStorage.removeItem('ewa_checkout_order_id')
+      clearCheckoutIdempotencyKeys()
+      toast.success('Payment confirmed. Thank you for your order.')
     } else if (res.data.ok && res.data.order) {
       message.value = `Order status: ${res.data.order.status}. If payment succeeded, status will update shortly.`
+      toast.info(message.value)
     } else {
       message.value = res.data.message || 'Could not verify payment yet.'
+      toast.error(message.value)
     }
   } catch (e) {
+    verifying.value = false
     message.value = e instanceof Error ? e.message : 'Verification failed'
+    toast.error(message.value)
   }
 })
 </script>
@@ -43,11 +56,19 @@ onMounted(async () => {
 <template>
   <div class="wrap">
     <div class="card" :class="{ success: ok }">
-      <h1 class="title">{{ ok ? 'Thank you' : 'Payment' }}</h1>
-      <p class="msg">{{ message }}</p>
+      <h1 class="title">{{ ok ? 'Thank you' : verifying ? 'Payment' : 'Payment status' }}</h1>
+      <p class="msg" role="status">{{ message }}</p>
       <div class="row">
         <button type="button" class="btn" @click="router.push({ name: 'home' })">
           Back to home
+        </button>
+        <button
+          v-if="!ok && !verifying"
+          type="button"
+          class="btn secondary"
+          @click="router.push({ name: 'catalogue' })"
+        >
+          Continue shopping
         </button>
       </div>
     </div>
@@ -114,10 +135,5 @@ onMounted(async () => {
   background: transparent;
   border: 1px solid rgba(44, 24, 16, 0.25);
   color: #2c1810;
-}
-
-.btn-primary {
-  background: var(--terra);
-  color: var(--ivory);
 }
 </style>

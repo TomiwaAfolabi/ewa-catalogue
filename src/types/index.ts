@@ -4,7 +4,7 @@
 // only requires updating the service layer.
 // ─────────────────────────────────────────────
 
-export type GarmentType = 'SHIRT' | 'TROUSER'
+export type GarmentType = 'SHIRT' | 'TROUSER' | 'SHORTS'
 
 /** Merged JSON from API: cm fields optional; garmentType required when editing garment fields. */
 export interface ProductSizes {
@@ -14,6 +14,7 @@ export interface ProductSizes {
   shirtLengthCm?: number | string
   waistCm?: number | string
   trouserLengthCm?: number | string
+  shortsLengthCm?: number | string
   /** Legacy string keys (older catalogue rows) */
   length?: string
   waist?: string
@@ -38,7 +39,7 @@ export interface Product {
   priceKobo?: number
   currency_symbol: string
   sizes: ProductSizes
-  /** When set, drives shirt vs trouser measurement labels (also may appear under sizes.garmentType). */
+  /** When set, drives shirt / trouser / shorts measurement labels (also may appear under sizes.garmentType). */
   garmentType?: GarmentType | null
   category?: string
   inStock?: boolean
@@ -116,6 +117,8 @@ export interface CreatedOrder {
   shippingAmount: number
   taxAmount: number
   total: number
+  /** True when the server replayed a prior idempotent create (same Idempotency-Key + body). */
+  replayed?: boolean
 }
 
 /** Line on a persisted order (from `GET /v1/orders`) */

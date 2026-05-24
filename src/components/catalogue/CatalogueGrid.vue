@@ -72,7 +72,8 @@ function clearSearch() {
 }
 
 function skipToGrid() {
-  gridEl.value?.focus()
+  gridEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  gridEl.value?.focus({ preventScroll: true })
 }
 </script>
 
@@ -279,12 +280,8 @@ function skipToGrid() {
         <h2 id="grid-panel-heading" class="grid-panel__title">
           Browse pieces
         </h2>
-        <a href="#product-grid" class="grid-panel__skip" @click.prevent="skipToGrid">
-          Skip to grid
-          <span class="sr-only">, product list</span>
-        </a>
       </div>
-    
+
       <div
         id="product-grid"
         ref="gridEl"
@@ -345,6 +342,13 @@ function skipToGrid() {
           Next
         </button>
       </nav>
+
+      <div class="grid-panel__footer">
+        <a href="#product-grid" class="grid-panel__skip" @click.prevent="skipToGrid">
+          Skip to grid
+          <span class="sr-only">, return to top of product list</span>
+        </a>
+      </div>
     </div>
 
     </div>
@@ -436,8 +440,15 @@ function skipToGrid() {
   color: rgba(139, 115, 85, 0.85);
 }
 
+.grid-panel__footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(201, 168, 76, 0.12);
+}
+
 .grid-panel__skip {
-  margin-left: auto;
   font-family: var(--font-sans);
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -900,10 +911,9 @@ function skipToGrid() {
 @media (max-width: 640px) {
   .catalogue-section { padding: 40px 16px 64px; }
   .grid-panel { padding: 16px 14px 20px; }
-  .grid-panel__skip {
-    margin-left: 0;
-    width: 100%;
-    text-align: right;
+  .grid-panel__footer {
+    margin-top: 20px;
+    padding-top: 16px;
   }
   .product-grid,
   .skeleton-grid {

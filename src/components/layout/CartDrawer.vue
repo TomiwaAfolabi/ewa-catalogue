@@ -2,10 +2,12 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore'
+import { useToast } from '@/composables/useToast'
 import { canPurchaseProduct } from '@/utils/inventory'
 
 const router = useRouter()
 const cart = useCartStore()
+const toast = useToast()
 
 const cartBlocked = computed(() => cart.hasUnavailableItems)
 
@@ -14,8 +16,12 @@ function formatLine(price: number, symbol: string, qty: number) {
 }
 
 function checkout() {
+  if (cart.hasUnavailableItems) {
+    toast.error('Remove out-of-stock items before checkout.')
+    return
+  }
   cart.closeCart()
-  if (cart.hasUnavailableItems) return
+  toast.info('Continue to Paystack checkout on the next page.')
   void router.push({ name: 'checkout' })
 }
 </script>
@@ -106,13 +112,13 @@ function checkout() {
                 </strong>
               </div>
               <p class="drawer-note">
-                Final amount is confirmed at checkout (server-priced in smallest currency unit).
+                Final amount is confirmed at checkout
               </p>
               <p v-if="cartBlocked" class="drawer-stock-alert" role="alert">
                 Remove out-of-stock items to continue to checkout.
               </p>
-              <button type="button" class="btn-checkout" :disabled="cartBlocked" @click="checkout">
-                Checkout
+              <button type="button" class="btn-checkout" @click="checkout">
+                Checkout with Paystack
               </button>
             </footer>
           </template>

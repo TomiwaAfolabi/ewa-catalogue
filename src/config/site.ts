@@ -22,7 +22,7 @@ export const SITE_DESCRIPTION =
   'EWA (ẹwà) — Yoruba for beauty. Shop the EWA collection: heritage tailoring, linen, and modern African luxury at ewaman.com.'
 
 /** Contact email shown in UI (optional). */
-export const SITE_CONTACT_EMAIL = 'hello@ewaman.com'
+export const SITE_CONTACT_EMAIL = 'ewamanafrique@gmail.com'
 
 const DEFAULT_ORIGIN = `https://${SITE_HOST}`
 

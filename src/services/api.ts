@@ -52,6 +52,20 @@ function nestMessage(body: Record<string, unknown>): string {
   return 'Something went wrong. Please try again.'
 }
 
+function networkErrorMessage(err: unknown): string | null {
+  if (!(err instanceof Error)) return null
+  const m = err.message.toLowerCase()
+  if (
+    m === 'failed to fetch' ||
+    m.includes('networkerror when attempting to fetch') ||
+    m.includes('network request failed') ||
+    m === 'load failed'
+  ) {
+    return 'Unable to connect. Please check your internet connection and try again.'
+  }
+  return null
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
@@ -87,7 +101,11 @@ async function request<T>(
   } catch (err: unknown) {
     clearTimeout(timeoutId)
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Request timed out. Please check your connection.')
+      throw new Error('Request timed out. Please check your connection and try again.')
+    }
+    const networkMsg = networkErrorMessage(err)
+    if (networkMsg) {
+      throw new Error(networkMsg)
     }
     throw err
   }
@@ -185,33 +203,55 @@ const api = {
         })}`,
       ),
 
-    create: (payload: {
-      items: {
-        productId: string
-        quantity: number
-        expectedUnitPriceKobo: number
-        selectedSize?: string
-      }[]
-      shippingSnapshot?: Record<string, unknown>
-      notes?: string
-      shippingAmount?: number
-      taxAmount?: number
-      guestCheckoutEmail?: string
-    }) =>
-      request<CreatedOrder>('/v1/orders', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      }),
+    create: (
+      payload: {
+        items: {
+          productId: string
+          quantity: number
+          expectedUnitPriceKobo: number
+          selectedSize?: string
+        }[]
+        shippingSnapshot?: Record<string, unknown>
+        notes?: string
+        shippingAmount?: number
+        taxAmount?: number
+        guestCheckoutEmail?: string
+      },
+      idempotencyKey?: string,
+      opts?: RequestOpts,
+    ) =>
+      request<CreatedOrder>(
+        '/v1/orders',
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          ...(idempotencyKey
+            ? { headers: { 'Idempotency-Key': idempotencyKey } }
+            : {}),
+        },
+        opts,
+      ),
 
     getOne: (orderId: string) => request<CreatedOrder & { items?: unknown[] }>(`/v1/orders/${orderId}`),
   },
 
   payments: {
     initializePaystack: (
-      payload: { orderId: string; callbackUrl?: string; expectedOrderTotalKobo?: number },
+      payload: {
+        orderId: string
+        callbackUrl?: string
+        expectedOrderTotalKobo?: number
+        guestCheckoutEmail?: string
+      },
       idempotencyKey: string,
+      opts?: RequestOpts,
     ) => {
-      const body: { orderId: string; callbackUrl?: string; expectedOrderTotalKobo?: number } = {
+      const body: {
+        orderId: string
+        callbackUrl?: string
+        expectedOrderTotalKobo?: number
+        guestCheckoutEmail?: string
+      } = {
         orderId: payload.orderId,
       }
       if (payload.callbackUrl != null && payload.callbackUrl !== '') {
@@ -223,11 +263,19 @@ const api = {
       ) {
         body.expectedOrderTotalKobo = Math.round(payload.expectedOrderTotalKobo)
       }
-      return request<PaystackInitializeResponse>('/v1/payments/paystack/initialize', {
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: { 'Idempotency-Key': idempotencyKey },
-      })
+      const guestEmail = payload.guestCheckoutEmail?.trim().toLowerCase()
+      if (guestEmail) {
+        body.guestCheckoutEmail = guestEmail
+      }
+      return request<PaystackInitializeResponse>(
+        '/v1/payments/paystack/initialize',
+        {
+          method: 'POST',
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': idempotencyKey },
+        },
+        opts,
+      )
     },
 
     verifyPaystack: (reference: string) =>

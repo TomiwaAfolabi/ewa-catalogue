@@ -17,6 +17,29 @@ function sanitizeOrderNotes(raw: string | undefined): string | undefined {
   return t.replace(/[<>]/g, '');
 }
 
+/** Strip angle brackets from string leaves in the shipping snapshot (defense in depth). */
+function sanitizeShippingSnapshot(
+  raw: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (raw == null) return undefined;
+  const walk = (v: unknown): unknown => {
+    if (typeof v === 'string') return v.replace(/[<>]/g, '');
+    if (Array.isArray(v)) return v.map(walk);
+    if (v != null && typeof v === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+        out[k] = walk(val);
+      }
+      return out;
+    }
+    return v;
+  };
+  const result = walk(raw);
+  return result != null && typeof result === 'object' && !Array.isArray(result)
+    ? (result as Record<string, unknown>)
+    : raw;
+}
+
 /** Placeholder password hash for catalogue-only guest users (not used for login). */
 const GUEST_USER_PASSWORD_HASH =
   '$2b$10$E1lZDdpa7prDIGQAK.GGOuEZTaRMHpIB4x/TsO7rShJUyOWGq3Kiy';
@@ -31,10 +54,15 @@ export class OrdersService {
     dto: CreateOrderDto,
   ): Promise<string> {
     if (authenticatedUserId) return authenticatedUserId;
-    const email = dto.guestCheckoutEmail?.trim().toLowerCase();
+    const snap = dto.shippingSnapshot as Record<string, unknown> | undefined;
+    const snapEmail =
+      typeof snap?.guestCheckoutEmail === 'string'
+        ? snap.guestCheckoutEmail.trim().toLowerCase()
+        : undefined;
+    const email = dto.guestCheckoutEmail?.trim().toLowerCase() || snapEmail;
     if (!email) {
       throw new BadRequestException(
-        'Sign in or enter your email on checkout to pay as a guest.',
+        'guestCheckoutEmail is required when not signed in',
       );
     }
     const row = await tx.user.upsert({
@@ -57,11 +85,13 @@ export class OrdersService {
       throw new BadRequestException('Order must contain at least one line');
     }
 
-    if (dto.shippingSnapshot != null) {
+    const shippingSnapshot = sanitizeShippingSnapshot(dto.shippingSnapshot);
+
+    if (shippingSnapshot != null) {
       let bytes: number;
       try {
         bytes = new TextEncoder().encode(
-          JSON.stringify(dto.shippingSnapshot),
+          JSON.stringify(shippingSnapshot),
         ).length;
       } catch {
         throw new BadRequestException(
@@ -156,7 +186,7 @@ export class OrdersService {
             shippingAmount,
             taxAmount,
             total,
-            shippingSnapshot: dto.shippingSnapshot as Prisma.InputJsonValue | undefined,
+            shippingSnapshot: shippingSnapshot as Prisma.InputJsonValue | undefined,
             notes,
             items: { create: lines },
           },

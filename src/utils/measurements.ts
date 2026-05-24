@@ -63,11 +63,18 @@ export function formatMeasurementDual(
 }
 
 export function normalizeGarmentType(value: unknown): GarmentType | null {
-  if (value === 'SHIRT' || value === 'TROUSER') return value
+  if (value === 'SHIRT' || value === 'TROUSER' || value === 'SHORTS') return value
   if (typeof value === 'string') {
     const u = value.trim().toUpperCase()
-    if (u === 'SHIRT' || u === 'TROUSER') return u as GarmentType
+    if (u === 'SHIRT' || u === 'TROUSER' || u === 'SHORTS') return u as GarmentType
   }
+  return null
+}
+
+export function garmentTypeLabel(type: GarmentType | null | undefined): string | null {
+  if (type === 'SHIRT') return 'Shirt'
+  if (type === 'TROUSER') return 'Trouser'
+  if (type === 'SHORTS') return 'Shorts'
   return null
 }
 
@@ -90,6 +97,27 @@ export function resolveGarmentType(
     return isMeasurementPresent(s.waistCm) || isMeasurementPresent(s.trouserLengthCm)
   }
 
+  function hasShortsCm(s: ProductSizes | undefined | null): boolean {
+    if (!s) return false
+    return (
+      isMeasurementPresent(s.waistCm) ||
+      isMeasurementPresent(s.shortsLengthCm) ||
+      isMeasurementPresent(s.trouserLengthCm)
+    )
+  }
+
+  function hasShortsLengthCm(s: ProductSizes | undefined | null): boolean {
+    if (!s) return false
+    return isMeasurementPresent(s.shortsLengthCm)
+  }
+
+  function explicitMatchesData(explicit: GarmentType, s: ProductSizes | undefined | null): boolean {
+    if (explicit === 'SHIRT') return hasShirtCm(s)
+    if (explicit === 'TROUSER') return hasTrouserCm(s)
+    if (explicit === 'SHORTS') return hasShortsCm(s)
+    return false
+  }
+
   const explicit =
     normalizeGarmentType(productGarmentType) ??
     normalizeGarmentType(sizes?.garmentType)
@@ -98,14 +126,14 @@ export function resolveGarmentType(
   if (sizes) {
     const hs = hasShirtCm(sizes)
     const ht = hasTrouserCm(sizes)
-    if (hs && !ht) inferred = 'SHIRT'
-    else if (ht && !hs) inferred = 'TROUSER'
+    const hshort = hasShortsLengthCm(sizes)
+    if (hs && !ht && !hshort) inferred = 'SHIRT'
+    else if (hshort && !hs) inferred = 'SHORTS'
+    else if (ht && !hs && !hshort) inferred = 'TROUSER'
   }
 
   if (explicit && inferred && explicit !== inferred) {
-    const explicitMatchesData =
-      explicit === 'SHIRT' ? hasShirtCm(sizes) : hasTrouserCm(sizes)
-    if (!explicitMatchesData) return inferred
+    if (!explicitMatchesData(explicit, sizes)) return inferred
   }
 
   if (explicit) return explicit
@@ -239,6 +267,17 @@ export function normalizeGarmentSizes(raw: unknown): ProductSizes {
     'leg_length_cm',
   ])
 
+  setCm('shortsLengthCm', [
+    'shortsLengthCm',
+    'shorts_length_cm',
+    'shortsLength',
+    'shorts_length',
+    'shortLengthCm',
+    'short_length_cm',
+    'shortLength',
+    'short_length',
+  ])
+
   for (const lk of ['chest', 'armLength', 'waist', 'shirtlength'] as const) {
     const v = pickFromMap(map, [lk])
     if (!isMeasurementPresent(v)) continue
@@ -274,10 +313,16 @@ export function normalizeGarmentSizes(raw: unknown): ProductSizes {
 
     if (
       !isMeasurementPresent(merged.trouserLengthCm) &&
+      !isMeasurementPresent(merged.shortsLengthCm) &&
       (gt === 'TROUSER' ||
+        gt === 'SHORTS' ||
         (!shirtSignals && isMeasurementPresent(merged.waistCm)))
     ) {
-      merged.trouserLengthCm = lenVal as number | string
+      if (gt === 'SHORTS') {
+        merged.shortsLengthCm = lenVal as number | string
+      } else {
+        merged.trouserLengthCm = lenVal as number | string
+      }
       consumed = true
     } else if (!isMeasurementPresent(merged.shirtLengthCm) && gt === 'SHIRT') {
       merged.shirtLengthCm = lenVal as number | string

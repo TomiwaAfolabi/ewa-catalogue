@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import { IsEmail, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 
 export class InitializePaymentDto {
   @IsUUID()
@@ -18,4 +18,10 @@ export class InitializePaymentDto {
   @IsInt()
   @Min(0)
   expectedOrderTotalKobo?: number;
+
+  /** Guest checkout — required by API when the request is not authenticated. */
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(254)
+  guestCheckoutEmail?: string;
 }

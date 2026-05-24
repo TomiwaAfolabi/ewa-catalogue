@@ -89,12 +89,12 @@ onBeforeUnmount(() => {
   <section ref="heroRef" class="hero home-reveal" aria-label="Introduction">
     <div class="hero-left">
       <div class="rebrand-badge">✦ A New Chapter Begins</div>
-      <h1 class="hero-headline">
-        Where <em>Heritage</em><br />Meets<br />the Modern<br />Man
+      <h1 class="hero-headline ">
+        Where <em>Heritage</em><br class="hidden sm:block"/> Meets <br class="hidden sm:block" /> the Modern Man
       </h1>
       <p class="hero-sub">African beauty, reimagined</p>
       <p class="hero-body">
-        <strong>Ewa</strong> is not just clothing, it is a celebration.
+        <strong>Ewa</strong> is not just clothing, it is a celebration
         of the craftsmen who came before us, and the men we are becoming.
         Every thread carries a story.
       </p>
@@ -144,11 +144,9 @@ onBeforeUnmount(() => {
           Ready to wear your <em>heritage</em>?
         </h2>
         <p class="cta-lead">
-          Shop linen pieces made for everyday confidence — breathable fabrics, careful tailoring, and silhouettes rooted in African elegance.
+          Shop pieces made for everyday confidence. Breathable fabrics, careful tailoring, and silhouettes rooted in African elegance.
         </p>
-        <p class="cta-body">
-          Browse the full catalogue for measurements, fabric notes, and styling ideas. Tap a featured piece to open its detail page.
-        </p>
+       
         <div class="cta-actions">
           <button type="button" class="btn-primary" @click="router.push({ name: 'catalogue' })">
             Shop the catalogue
@@ -300,7 +298,7 @@ onBeforeUnmount(() => {
           <strong>ẹwà</strong> (Ewa) is Yoruba for beauty — not only what you see, but what you feel in fabric against skin and in how you move through the world.
         </p>
         <p class="brand-body">
-          Our mark pairs that idea with the Ewa man: deliberate, rooted, and modern. Every piece in the collection is cut and finished to honour the same standard — linen you can live in, tailoring you can trust, and a quiet confidence that needs no loud label.
+          Our mark pairs that idea with the Ewa man: deliberate, rooted, and modern. Every piece in the collection is cut and finished to honour the same standar. Clothing you can live in, tailoring you can trust, and style that radiates confidence.
         </p>
         <p class="brand-body">
           When you shop with us, you are choosing clothes that carry culture forward: wearable, intentional, and unapologetically refined.
@@ -322,7 +320,7 @@ onBeforeUnmount(() => {
           <circle cx="20" cy="20" r="4" fill="#C9A84C"/>
         </svg>
         <h3 class="pillar-title">Redefine African Fashion</h3>
-        <p class="pillar-text">Bringing African-inspired design into the contemporary market — not as costume, but as culture in motion.</p>
+        <p class="pillar-text">Bringing African inspired design into the contemporary market not as costume, but as culture in motion.</p>
       </div>
       <div class="pillar">
         <svg class="pillar-icon" viewBox="0 0 40 40" fill="none">
@@ -331,7 +329,7 @@ onBeforeUnmount(() => {
           <line x1="20" y1="8" x2="20" y2="32" stroke="#B5522A" stroke-width="0.5"/>
         </svg>
         <h3 class="pillar-title">Make Culture Wearable</h3>
-        <p class="pillar-text">Culturally inspired clothing that is accessible, everyday, and deeply empowering for every man.</p>
+        <p class="pillar-text">Culturally inspired clothing that is accessible, comfortable, and deeply empowering for every man.</p>
       </div>
       <div class="pillar">
         <svg class="pillar-icon" viewBox="0 0 40 40" fill="none">
@@ -430,6 +428,7 @@ onBeforeUnmount(() => {
   font-weight: 300;
   line-height: 1.0;
   color: var(--ivory);
+  
  
 }
 .hero-headline em { font-style: italic; color: var(--terra); }

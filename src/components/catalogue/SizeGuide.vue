@@ -8,7 +8,7 @@
   • "Measured for this piece only" tooltip prevents user confusion
   • Direction icons (vertical / horizontal arrows) give immediate
     visual affordance for measurement type without extra reading
-  • SHIRT / TROUSER cm fields from API; legacy string keys still supported
+  • SHIRT / TROUSER / SHORTS cm fields from API; legacy string keys still supported
   ─────────────────────────────────────────────────────────────────
 -->
 
@@ -17,6 +17,7 @@ import { computed } from 'vue'
 import type { GarmentType, ProductSizes } from '@/types'
 import {
   formatMeasurementDual,
+  garmentTypeLabel,
   isMeasurementPresent,
   normalizeGarmentSizes,
   resolveGarmentType,
@@ -43,6 +44,11 @@ const CM_SHIRT_FIELDS: { key: keyof ProductSizes; label: string; dir: Dir }[] = 
 const CM_TROUSER_FIELDS: { key: keyof ProductSizes; label: string; dir: Dir }[] = [
   { key: 'waistCm', label: 'Waist', dir: 'h' },
   { key: 'trouserLengthCm', label: 'Trouser length', dir: 'v' },
+]
+
+const CM_SHORTS_FIELDS: { key: keyof ProductSizes; label: string; dir: Dir }[] = [
+  { key: 'waistCm', label: 'Waist', dir: 'h' },
+  { key: 'shortsLengthCm', label: 'Shorts length', dir: 'v' },
 ]
 
 const LEGACY_FIELDS: { key: keyof ProductSizes; label: string; dir: Dir }[] = [
@@ -73,6 +79,26 @@ const hasCmTrouser = computed(
     isMeasurementPresent(sizes.value.trouserLengthCm),
 )
 
+const hasCmShorts = computed(
+  () =>
+    isMeasurementPresent(sizes.value.waistCm) ||
+    isMeasurementPresent(sizes.value.shortsLengthCm) ||
+    isMeasurementPresent(sizes.value.trouserLengthCm),
+)
+
+function rowsFromShortsConfig(s: ProductSizes): DisplayRow[] {
+  const out: DisplayRow[] = []
+  for (const c of CM_SHORTS_FIELDS) {
+    let raw = s[c.key]
+    if (!isMeasurementPresent(raw) && c.key === 'shortsLengthCm') {
+      raw = s.trouserLengthCm
+    }
+    const formatted = formatMeasurementDual(raw as number | string | undefined | null)
+    if (formatted) out.push({ key: String(c.key), label: c.label, dir: c.dir, value: formatted })
+  }
+  return out
+}
+
 function rowsFromCmConfig(
   s: ProductSizes,
   configs: { key: keyof ProductSizes; label: string; dir: Dir }[],
@@ -94,6 +120,7 @@ const displayRows = computed((): DisplayRow[] => {
 
   if (mode === 'SHIRT') return rowsFromCmConfig(s, CM_SHIRT_FIELDS)
   if (mode === 'TROUSER') return rowsFromCmConfig(s, CM_TROUSER_FIELDS)
+  if (mode === 'SHORTS') return rowsFromShortsConfig(s)
 
   if (hasCmShirt.value && hasCmTrouser.value) {
     return [
@@ -102,6 +129,7 @@ const displayRows = computed((): DisplayRow[] => {
     ]
   }
   if (hasCmShirt.value) return rowsFromCmConfig(s, CM_SHIRT_FIELDS)
+  if (hasCmShorts.value && !hasCmTrouser.value) return rowsFromShortsConfig(s)
   if (hasCmTrouser.value) return rowsFromCmConfig(s, CM_TROUSER_FIELDS)
 
   const legacy: DisplayRow[] = []
@@ -128,8 +156,8 @@ const usesDualUnits = computed(() =>
 
 const typeBadge = computed((): string | null => {
   const t = effectiveGarmentType.value
-  if (t === 'SHIRT') return 'Shirt'
-  if (t === 'TROUSER') return 'Trouser'
+  const labeled = garmentTypeLabel(t)
+  if (labeled) return labeled
   if (hasCmShirt.value && hasCmTrouser.value) return 'Shirt & trouser'
   return null
 })
@@ -184,9 +212,7 @@ const typeBadge = computed((): string | null => {
       </svg>
       <p>
         All measurements refer to this piece specifically. Please check before ordering.
-        <template v-if="usesDualUnits">
-          Values shown in centimetres (cm) and inches (in). A dash (-) is shown when a measurement is zero.
-        </template>
+      
       </p>
     </div>
   </div>
