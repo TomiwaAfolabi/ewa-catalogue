@@ -25,15 +25,12 @@ import { computed } from 'vue'
 import type { Product } from '@/types'
 import { countMeasurementFields, normalizeGarmentSizes, resolveGarmentType } from '@/utils/measurements'
 import { productStockQuantity } from '@/utils/inventory'
+import { formatProductPrice } from '@/utils/pricing'
 
 type HighlightIcon = 'fabric' | 'ruler' | 'hanger' | 'tag' | 'layers'
 
 const props = defineProps<{ product: Product }>()
 const emit  = defineEmits<{ click: [product: Product] }>()
-
-function formatPrice(price: number, symbol: string) {
-  return `${symbol}\u00a0${price.toLocaleString('en-NG')}`
-}
 
 /* Three scannable bullets: material, measurements, garment type — from real fields + title. */
 function getHighlights(p: Product) {
@@ -101,7 +98,7 @@ function getHighlights(p: Product) {
 const stockQty = computed(() => productStockQuantity(props.product))
 
 const cardAriaLabel = computed(() => {
-  const price = formatPrice(props.product.price, props.product.currency_symbol)
+  const price = formatProductPrice(props.product)
   const parts = [`${props.product.title} — ${price}.`]
   if (props.product.featured) parts.push('Featured piece.')
   parts.push(stockQty.value === 0 ? 'Out of stock.' : `${stockQty.value} in stock.`)
@@ -157,7 +154,7 @@ const cardAriaLabel = computed(() => {
 
       <!-- Price pill — appears on hover, reinforces recognition -->
       <div class="price-pill" aria-hidden="true">
-        {{ formatPrice(product.price, product.currency_symbol) }}
+        {{ formatProductPrice(product) }}
       </div>
     </div>
 
@@ -168,7 +165,7 @@ const cardAriaLabel = computed(() => {
       <div class="card-head">
         <p class="card-title">{{ product.title }}</p>
         <p class="card-price" aria-hidden="true">
-          {{ formatPrice(product.price, product.currency_symbol) }}
+          {{ formatProductPrice(product) }}
         </p>
       </div>
 

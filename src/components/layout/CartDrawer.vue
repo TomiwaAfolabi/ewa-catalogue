@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore'
 import { useToast } from '@/composables/useToast'
 import { canPurchaseProduct } from '@/utils/inventory'
+import { formatNairaAmount, formatNairaFromKobo, productUnitPriceKobo } from '@/utils/pricing'
 
 const router = useRouter()
 const cart = useCartStore()
@@ -11,8 +12,8 @@ const toast = useToast()
 
 const cartBlocked = computed(() => cart.hasUnavailableItems)
 
-function formatLine(price: number, symbol: string, qty: number) {
-  return `${symbol} ${(price * qty).toLocaleString('en-NG')}`
+function formatLine(product: (typeof cart.items)[0]['product'], qty: number) {
+  return formatNairaFromKobo(productUnitPriceKobo(product) * qty, product.currency_symbol)
 }
 
 function checkout() {
@@ -21,6 +22,7 @@ function checkout() {
     return
   }
   cart.closeCart()
+  toast.info('Continue to Paystack checkout on the next page.')
   void router.push({ name: 'checkout' })
 }
 </script>
@@ -70,7 +72,7 @@ function checkout() {
                     Out of stock — remove to check out
                   </p>
                   <p class="line-price">
-                    {{ formatLine(line.product.price, line.product.currency_symbol, line.quantity) }}
+                    {{ formatLine(line.product, line.quantity) }}
                   </p>
                   <div class="line-qty">
                     <button
@@ -106,8 +108,7 @@ function checkout() {
               <div class="drawer-total">
                 <span>Estimated total</span>
                 <strong>
-                  {{ cart.items[0]?.product.currency_symbol }}
-                  {{ cart.totalPrice.toLocaleString('en-NG') }}
+                  {{ formatNairaAmount(cart.totalPrice, cart.items[0]?.product.currency_symbol) }}
                 </strong>
               </div>
               <p class="drawer-note">
@@ -117,7 +118,7 @@ function checkout() {
                 Remove out-of-stock items to continue to checkout.
               </p>
               <button type="button" class="btn-checkout" :disabled="cartBlocked" @click="checkout">
-                Checkout
+                Checkout with Paystack
               </button>
             </footer>
           </template>

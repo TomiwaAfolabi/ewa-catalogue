@@ -21,6 +21,7 @@ import { useProductStore } from '@/stores/productStore'
 import CatalogueCard from './CatalogueCard.vue'
 import EwaPageSpinner from '@/components/ui/EwaPageSpinner.vue'
 import type { Product } from '@/types'
+import { productUnitPriceKobo } from '@/utils/pricing'
 
 const router       = useRouter()
 const productStore = useProductStore()
@@ -54,8 +55,12 @@ function goToPage(next: number) {
 
 const sortedProducts = computed(() => {
   const base = productStore.filteredProducts
-  if (sortBy.value === 'price-asc')  return [...base].sort((a, b) => a.price - b.price)
-  if (sortBy.value === 'price-desc') return [...base].sort((a, b) => b.price - a.price)
+  if (sortBy.value === 'price-asc') {
+    return [...base].sort((a, b) => productUnitPriceKobo(a) - productUnitPriceKobo(b))
+  }
+  if (sortBy.value === 'price-desc') {
+    return [...base].sort((a, b) => productUnitPriceKobo(b) - productUnitPriceKobo(a))
+  }
   return base
 })
 

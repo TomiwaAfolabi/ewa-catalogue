@@ -7,9 +7,11 @@ export type CatalogueProductDto = {
   slug: string;
   title: string;
   description?: string | null;
-  /** Display / UX — whole naira (rounded from kobo). */
+  /** Display / UX — naira (exact kobo ÷ 100; may include .xx). */
   price: number;
-  /** Authoritative smallest-unit amount; must match server on checkout. */
+  /** Authoritative smallest-unit amount (kobo); Paystack and checkout use this. */
+  unitPriceKobo: number;
+  /** @deprecated Alias of unitPriceKobo */
   priceKobo: number;
   currency_symbol: string;
   imgSrc: string;
@@ -27,7 +29,8 @@ export type CatalogueProductDto = {
 export function toCatalogueProduct(
   p: Product & { category?: Category | null },
 ): CatalogueProductDto {
-  const naira = Math.round(p.price / 100);
+  const unitPriceKobo = Math.round(Number(p.price));
+  const naira = unitPriceKobo / 100;
   const images = [...p.images];
   const imgSrc = images[0] ?? '';
   const fromDbSizes =
@@ -55,7 +58,8 @@ export function toCatalogueProduct(
     title: p.title,
     description: p.description,
     price: naira,
-    priceKobo: p.price,
+    unitPriceKobo,
+    priceKobo: unitPriceKobo,
     currency_symbol: p.currency === 'NGN' ? '₦' : p.currency,
     imgSrc,
     images,

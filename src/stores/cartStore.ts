@@ -6,7 +6,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CartItem, Product } from '@/types'
 import { canPurchaseProduct, productStockQuantity } from '@/utils/inventory'
-import { productLineTotalNaira, productUnitPriceKobo } from '@/utils/pricing'
+import { cartTotalKobo, productUnitPriceKobo } from '@/utils/pricing'
 
 export const useCartStore = defineStore('cart', () => {
   const items = ref<CartItem[]>([])
@@ -16,13 +16,8 @@ export const useCartStore = defineStore('cart', () => {
     items.value.reduce((sum, item) => sum + item.quantity, 0)
   )
 
-  /** Whole naira (rounded) for display only. */
-  const totalPrice = computed(() =>
-    items.value.reduce(
-      (sum, item) => sum + productLineTotalNaira(item.product, item.quantity),
-      0,
-    )
-  )
+  /** Exact naira total for display (kobo ÷ 100, matches Paystack). */
+  const totalPrice = computed(() => cartTotalKobo(items.value) / 100)
 
   const isEmpty = computed(() => items.value.length === 0)
 
