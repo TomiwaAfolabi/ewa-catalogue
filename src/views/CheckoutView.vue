@@ -273,7 +273,7 @@ async function runCheckout(): Promise<void> {
     toast.success('Order created.')
   }
 
-  toast.info('Kindly wait while we redirect you  Paystack checkout…')
+  toast.info('Kindly wait while we redirect you to Paystack checkout…')
   const payIdempotencyKey = getOrCreatePayIdempotencyKey(orderRes.data.id)
   const payRes = await api.payments.initializePaystack(
     {
@@ -389,12 +389,10 @@ async function payWithPaystack() {
             </span>
           </li>
         </ul>
-        <p class="hint">
-          Prices match the Paystack charge (NGN, to the kobo). Whole-naira items must be stored as kobo in the catalogue (e.g. ₦3,000 → 300000).
-        </p>
+      
         <p class="delivery-fee-caveat delivery-fee-caveat--inline" role="note">
-          <strong>Delivery not included.</strong>
-          The amount is for your piece(s) only, you would be required to pay for delivery fee separately depending on your location.
+          <strong>Please note that the delivery fee is not included and we only deliver within Lagos state, Nigeria at the moment,thank you</strong>
+          The amount is for the items selected only, you would be required to pay for delivery fee separately depending on your location. You can always make enquires regarding delivery via our email or by clicking the enquire button on the specific item page. Thank you.
         </p>
         <p class="order-total">
           <span class="order-total__label">Total</span>
