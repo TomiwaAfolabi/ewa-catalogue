@@ -391,8 +391,8 @@ async function payWithPaystack() {
         </ul>
       
         <p class="delivery-fee-caveat delivery-fee-caveat--inline" role="note">
-          <strong>Please note that the delivery fee is not included and we only deliver within Lagos state, Nigeria at the moment,thank you</strong>
-          The amount is for the items selected only, you would be required to pay for delivery fee separately depending on your location. You can always make enquires regarding delivery via our email or by clicking the enquire button on the specific item page. Thank you.
+          <strong>Please note that the delivery fee is not included and we only deliver within Lagos state, Nigeria at the moment.</strong>
+          The amount is for the items selected only, you would be required to pay for delivery fee separately depending on your location. You can always make enquires regarding delivery via our email or by clicking the enquiry button on the specific item page. Thank you.
         </p>
         <p class="order-total">
           <span class="order-total__label">Total</span>
