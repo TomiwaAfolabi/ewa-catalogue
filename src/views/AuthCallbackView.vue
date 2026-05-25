@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import EwaPageSpinner from '@/components/ui/EwaPageSpinner.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -28,7 +29,10 @@ onMounted(async () => {
 
 <template>
   <div class="wrap">
-    <p class="msg">Completing sign-in…</p>
+    <EwaPageSpinner
+      size="lg"
+      label="Completing sign-in. Please wait."
+    />
   </div>
 </template>
 
@@ -41,9 +45,5 @@ onMounted(async () => {
   padding: 48px;
   color: #faf6ef;
   background: rgba(28, 19, 16, 0.6);
-}
-.msg {
-  font-size: 1rem;
-  letter-spacing: 0.08em;
 }
 </style>
