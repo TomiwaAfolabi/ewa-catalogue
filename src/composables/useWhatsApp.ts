@@ -7,7 +7,7 @@ import { SITE_NAME, getSiteOrigin } from '@/config/site'
 import type { CartItem } from '@/types'
 import { productLineTotalNaira } from '@/utils/pricing'
 
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '23058533374'
+const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '2349056674075'
 
 export type CheckoutWhatsAppDelivery = {
   fullName: string
