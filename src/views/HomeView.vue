@@ -85,52 +85,7 @@ onBeforeUnmount(() => {
 <template>
   <!-- ── NAV already in layout, this is page content ── -->
 
-  <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
-  <section ref="heroRef" class="hero home-reveal" aria-label="Introduction">
-    <div class="hero-left">
-      <div class="rebrand-badge">✦ A New Chapter Begins</div>
-      <h1 class="hero-headline ">
-        Where <em>Heritage</em><br class="hidden sm:block"/> Meets <br class="hidden sm:block" /> the Modern Man
-      </h1>
-      <p class="hero-sub">African beauty, reimagined</p>
-      <p class="hero-body">
-        <strong>Ewa</strong> is not just clothing, it is a celebration
-        of the craftsmen who came before us, and the men we are becoming.
-        Every thread carries a story.
-      </p>
-      <div class="hero-ctas">
-        <button class="btn-primary" @click="router.push({ name: 'catalogue' })">
-          Discover Ewa
-        </button>
-        <button class="btn-ghost" @click="router.push({ name: 'catalogue' })">
-          Shop the Collection ↓
-        </button>
-      </div>
-    </div>
-
-    <div class="hero-right">
-      <div class="hero-fabric-bg" />
-      <div class="hero-center-art">
-        <div class="hero-emblem-float" aria-hidden="true">
-        <svg class="lily-emblem" viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C"/>
-          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(60 140 140)"/>
-          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(120 140 140)"/>
-          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(180 140 140)"/>
-          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(240 140 140)"/>
-          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(300 140 140)"/>
-          <circle cx="140" cy="140" r="24" fill="#B5522A"/>
-          <circle cx="140" cy="140" r="14" fill="#C9A84C"/>
-          <circle cx="140" cy="140" r="110" stroke="#C9A84C" stroke-width="1" stroke-dasharray="4 6" fill="none"/>
-        </svg>
-        </div>
-      </div>
-      <div class="hero-quote">
-        <p class="hero-quote-text">"He carries culture in his walk<br />and confidence in his cloth."</p>
-        <span class="hero-quote-attr">✦ The Ewa Man</span>
-      </div>
-    </div>
-  </section>
+ 
 
   <!-- ── CTA + featured slideshow (section 2 — full-width band) ────────────── -->
   <section
@@ -157,6 +112,8 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
+
+   
 
     <!-- Cream strip — full viewport width (edge to edge) -->
     <div class="cta-slider-bleed">
@@ -269,6 +226,53 @@ onBeforeUnmount(() => {
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+    <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
+  <section ref="heroRef" class="hero home-reveal" aria-label="Introduction">
+    <div class="hero-left">
+      <div class="rebrand-badge">✦ A New Chapter Begins</div>
+      <h1 class="hero-headline ">
+        Where <em>Heritage</em><br class="hidden sm:block"/> Meets <br class="hidden sm:block" /> the Modern Man
+      </h1>
+      <p class="hero-sub">African beauty, reimagined</p>
+      <p class="hero-body">
+        <strong>Ewa</strong> is not just clothing, it is a celebration
+        of the craftsmen who came before us, and the men we are becoming.
+        Every thread carries a story.
+      </p>
+      <div class="hero-ctas">
+        <button class="btn-primary" @click="router.push({ name: 'catalogue' })">
+          Discover Ewa
+        </button>
+        <button class="btn-ghost" @click="router.push({ name: 'catalogue' })">
+          Shop the Collection ↓
+        </button>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="hero-fabric-bg" />
+      <div class="hero-center-art">
+        <div class="hero-emblem-float" aria-hidden="true">
+        <svg class="lily-emblem" viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C"/>
+          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(60 140 140)"/>
+          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(120 140 140)"/>
+          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(180 140 140)"/>
+          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(240 140 140)"/>
+          <ellipse cx="140" cy="80" rx="18" ry="52" fill="#C9A84C" transform="rotate(300 140 140)"/>
+          <circle cx="140" cy="140" r="24" fill="#B5522A"/>
+          <circle cx="140" cy="140" r="14" fill="#C9A84C"/>
+          <circle cx="140" cy="140" r="110" stroke="#C9A84C" stroke-width="1" stroke-dasharray="4 6" fill="none"/>
+        </svg>
+        </div>
+      </div>
+      <div class="hero-quote">
+        <p class="hero-quote-text">"He carries culture in his walk<br />and confidence in his cloth."</p>
+        <span class="hero-quote-attr">✦ The Ewa Man</span>
       </div>
     </div>
   </section>
