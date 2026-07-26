@@ -96,7 +96,7 @@ function skipToGrid() {
     <header class="catalogue-header">
       <p class="section-label" aria-hidden="true">The Collection</p>
       <h1 id="cat-heading" class="catalogue-title">
-        Men's <em>Clothing</em>
+       Atypical <em>Clothing</em>
       </h1>
       <p class="catalogue-subtitle" id="cat-desc">
         Crafted for the man who wears culture with intention.
